@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,19 +7,29 @@ import {
   Alert,
 } from 'react-native';
 import { useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
 import { changeLanguage } from '../../redux/slices/userSlice';
+import i18n from '../../i18n';
 
 const ChangeLanguageScreen: React.FC = () => {
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const currentLanguage = useAppSelector((state: RootState) => state.user.profile?.language || 'en');
   const [selectedLanguage, setSelectedLanguage] = useState(currentLanguage);
 
   const languages = [
-    { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
+    { code: 'en', name: t('English'), flag: '🇺🇸' },
+    { code: 'vi', name: t('Tiếng Việt'), flag: '🇻🇳' },
   ];
+
+  // Đồng bộ ngôn ngữ hiện tại khi component mount
+  useEffect(() => {
+    if (currentLanguage) {
+      i18n.changeLanguage(currentLanguage);
+    }
+  }, [currentLanguage]);
 
   const handleLanguageChange = (languageCode: 'en' | 'vi') => {
     setSelectedLanguage(languageCode);
@@ -27,12 +37,13 @@ const ChangeLanguageScreen: React.FC = () => {
 
   const handleSave = () => {
     dispatch(changeLanguage(selectedLanguage));
-    Alert.alert('Success', 'Language changed successfully');
+    i18n.changeLanguage(selectedLanguage);
+    Alert.alert('Success', t('Language changed successfully'));
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Select Language</Text>
+      <Text style={styles.title}>{t('Select Language')}</Text>
       <View style={styles.languageList}>
         {languages.map((language) => (
           <TouchableOpacity
@@ -60,7 +71,7 @@ const ChangeLanguageScreen: React.FC = () => {
       </View>
 
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>Save Changes</Text>
+        <Text style={styles.saveButtonText}>{t('Save Changes')}</Text>
       </TouchableOpacity>
     </View>
   );

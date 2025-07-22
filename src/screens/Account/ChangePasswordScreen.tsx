@@ -8,8 +8,10 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 const ChangePasswordScreen: React.FC = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -25,27 +27,27 @@ const ChangePasswordScreen: React.FC = () => {
 
   const handleChangePassword = () => {
     if (!formData.currentPassword.trim()) {
-      Alert.alert('Error', 'Current password is required');
+      Alert.alert(t('Error'), t('Current password is required'));
       return;
     }
 
     if (!formData.newPassword.trim()) {
-      Alert.alert('Error', 'New password is required');
+      Alert.alert(t('Error'), t('New password is required'));
       return;
     }
 
     if (formData.newPassword.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert(t('Error'), t('Password must be at least 6 characters'));
       return;
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('Error'), t('Passwords do not match'));
       return;
     }
 
     // Here you would typically call an API to change the password
-    Alert.alert('Success', 'Password changed successfully');
+    Alert.alert(t('Success'), t('Password changed successfully'));
     setFormData({
       currentPassword: '',
       newPassword: '',
@@ -57,50 +59,50 @@ const ChangePasswordScreen: React.FC = () => {
     <ScrollView style={styles.container}>
       <View style={styles.form}>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Current Password</Text>
+          <Text style={styles.label}>{t('Current Password')}</Text>
           <TextInput
             style={styles.input}
             value={formData.currentPassword}
             onChangeText={(value) => handleInputChange('currentPassword', value)}
-            placeholder="Enter current password"
+            placeholder={t('Enter current password')}
             placeholderTextColor="#999"
             secureTextEntry
           />
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>New Password</Text>
+          <Text style={styles.label}>{t('New Password')}</Text>
           <TextInput
             style={styles.input}
             value={formData.newPassword}
             onChangeText={(value) => handleInputChange('newPassword', value)}
-            placeholder="Enter new password"
+            placeholder={t('Enter new password')}
             placeholderTextColor="#999"
             secureTextEntry
           />
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Confirm New Password</Text>
+          <Text style={styles.label}>{t('Confirm New Password')}</Text>
           <TextInput
             style={styles.input}
             value={formData.confirmPassword}
             onChangeText={(value) => handleInputChange('confirmPassword', value)}
-            placeholder="Confirm new password"
+            placeholder={t('Confirm new password')}
             placeholderTextColor="#999"
             secureTextEntry
           />
         </View>
 
         <TouchableOpacity style={styles.changeButton} onPress={handleChangePassword}>
-          <Text style={styles.changeButtonText}>Change Password</Text>
+          <Text style={styles.changeButtonText}>{t('Change Password')}</Text>
         </TouchableOpacity>
 
         <View style={styles.passwordRequirements}>
-          <Text style={styles.requirementsTitle}>Password Requirements:</Text>
-          <Text style={styles.requirement}>• At least 6 characters long</Text>
-          <Text style={styles.requirement}>• Must contain letters and numbers</Text>
-          <Text style={styles.requirement}>• Cannot be the same as current password</Text>
+          <Text style={styles.requirementsTitle}>{t('Password Requirements:')}</Text>
+          <Text style={styles.requirement}>• {t('At least 6 characters long')}</Text>
+          <Text style={styles.requirement}>• {t('Must contain letters and numbers')}</Text>
+          <Text style={styles.requirement}>• {t('Cannot be the same as current password')}</Text>
         </View>
       </View>
     </ScrollView>

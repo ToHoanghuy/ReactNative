@@ -9,11 +9,13 @@ import { Calendar } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { HistoryStackParamList } from '../../types/navigation';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = StackNavigationProp<HistoryStackParamList, 'HistoryCalendar'>;
 
 const HistoryCalendarScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState<string>('');
 
   const onDayPress = (day: any) => {
@@ -27,7 +29,7 @@ const HistoryCalendarScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Select Date Range</Text>
+      <Text style={styles.title}>{t('Select Date Range')}</Text>
       <Calendar
         onDayPress={onDayPress}
         markedDates={{
@@ -54,12 +56,12 @@ const HistoryCalendarScreen: React.FC = () => {
         <TouchableOpacity
           style={[styles.button, styles.cancelButton]}
           onPress={() => navigation.goBack()}>
-          <Text style={[styles.buttonText, styles.cancelButtonText]}>Cancel</Text>
+          <Text style={[styles.buttonText, styles.cancelButtonText]}>{t('Cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.button, styles.applyButton]}
           onPress={applyFilter}>
-          <Text style={styles.buttonText}>Apply Filter</Text>
+          <Text style={styles.buttonText}>{t('Apply Filter')}</Text>
         </TouchableOpacity>
       </View>
     </View>

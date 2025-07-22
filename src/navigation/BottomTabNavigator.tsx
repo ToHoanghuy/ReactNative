@@ -54,26 +54,22 @@ function HistoryStackNavigator() {
 
 function AccountStackNavigator() {
   return (
-    <AccountStack.Navigator>
+    <AccountStack.Navigator screenOptions={{ headerShown: false }}>
       <AccountStack.Screen
         name="AccountMain"
         component={AccountMainScreen}
-        options={{ title: 'Account' }}
       />
       <AccountStack.Screen
         name="PersonalInfo"
         component={PersonalInfoScreen}
-        options={{ title: 'Personal Information' }}
       />
       <AccountStack.Screen
         name="ChangeLanguage"
         component={ChangeLanguageScreen}
-        options={{ title: 'Change Language' }}
       />
       <AccountStack.Screen
         name="ChangePassword"
         component={ChangePasswordScreen}
-        options={{ title: 'Change Password' }}
       />
     </AccountStack.Navigator>
   );

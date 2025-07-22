@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { useAppSelector } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
@@ -15,6 +16,7 @@ import { updateUserProfile } from '../../redux/slices/userSlice';
 
 const PersonalInfoScreen: React.FC = () => {
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const userProfile = useAppSelector((state: RootState) => state.user.profile);
   const [formData, setFormData] = useState({
     name: userProfile?.name || '',
@@ -31,40 +33,40 @@ const PersonalInfoScreen: React.FC = () => {
 
   const handleSave = () => {
     if (!formData.name.trim()) {
-      Alert.alert('Error', 'Name is required');
+      Alert.alert(t('Error'), t('Name is required'));
       return;
     }
 
     if (!formData.email.trim()) {
-      Alert.alert('Error', 'Email is required');
+      Alert.alert(t('Error'), t('Email is required'));
       return;
     }
 
     dispatch(updateUserProfile(formData));
-    Alert.alert('Success', 'Profile updated successfully');
+    Alert.alert(t('Success'), t('Profile updated successfully'));
   };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.form}>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Full Name</Text>
+          <Text style={styles.label}>{t('Full Name')}</Text>
           <TextInput
             style={styles.input}
             value={formData.name}
             onChangeText={(value) => handleInputChange('name', value)}
-            placeholder="Enter your full name"
+            placeholder={t('Enter your full name')}
             placeholderTextColor="#999"
           />
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email Address</Text>
+          <Text style={styles.label}>{t('Email Address')}</Text>
           <TextInput
             style={styles.input}
             value={formData.email}
             onChangeText={(value) => handleInputChange('email', value)}
-            placeholder="Enter your email address"
+            placeholder={t('Enter your email address')}
             placeholderTextColor="#999"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -72,19 +74,19 @@ const PersonalInfoScreen: React.FC = () => {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Phone Number</Text>
+          <Text style={styles.label}>{t('Phone Number')}</Text>
           <TextInput
             style={styles.input}
             value={formData.phone}
             onChangeText={(value) => handleInputChange('phone', value)}
-            placeholder="Enter your phone number"
+            placeholder={t('Enter your phone number')}
             placeholderTextColor="#999"
             keyboardType="phone-pad"
           />
         </View>
 
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save Changes</Text>
+          <Text style={styles.saveButtonText}>{t('Save Changes')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

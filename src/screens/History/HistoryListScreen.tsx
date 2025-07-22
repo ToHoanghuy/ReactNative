@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../hooks/redux';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -18,6 +19,7 @@ type NavigationProp = StackNavigationProp<HistoryStackParamList, 'HistoryList'>;
 
 const HistoryListScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation();
   const { items, isLoading } = useAppSelector((state: RootState) => state.history);
 
   const renderHistoryItem = ({ item }: { item: HistoryItem }) => (
@@ -29,11 +31,11 @@ const HistoryListScreen: React.FC = () => {
             styles.statusBadge,
             { backgroundColor: item.result === 'success' ? '#4CAF50' : '#F44336' },
           ]}>
-          <Text style={styles.statusText}>{item.result}</Text>
+          <Text style={styles.statusText}>{t(item.result)}</Text>
         </View>
       </View>
-      <Text style={styles.faceId}>Face ID: {item.faceId}</Text>
-      <Text style={styles.confidence}>Confidence: {(item.confidence * 100).toFixed(1)}%</Text>
+      <Text style={styles.faceId}>{t('Face ID')}: {item.faceId}</Text>
+      <Text style={styles.confidence}>{t('Confidence')}: {(item.confidence * 100).toFixed(1)}%</Text>
     </View>
   );
 
@@ -43,12 +45,12 @@ const HistoryListScreen: React.FC = () => {
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => navigation.navigate('HistoryCalendar')}>
-          <Text style={styles.buttonText}>Calendar Filter</Text>
+          <Text style={styles.buttonText}>{t('Calendar Filter')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.chartButton}
           onPress={() => navigation.navigate('HistoryChart')}>
-          <Text style={styles.buttonText}>Chart Report</Text>
+          <Text style={styles.buttonText}>{t('Chart Report')}</Text>
         </TouchableOpacity>
       </View>
 

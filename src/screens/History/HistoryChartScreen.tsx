@@ -6,11 +6,13 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 // import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const HistoryChartScreen: React.FC = () => {
+  const { t } = useTranslation();
   const [_selectedChart] = useState('line');
 
   // Sample data
@@ -25,7 +27,7 @@ const HistoryChartScreen: React.FC = () => {
   };
 
   const barData = {
-    labels: ['Success', 'Failed'],
+    labels: [t('Success'), t('Failed')],
     datasets: [
       {
         data: [85, 15],
@@ -35,14 +37,14 @@ const HistoryChartScreen: React.FC = () => {
 
   const pieData = [
     {
-      name: 'Success',
+      name: t('Success'),
       population: 85,
       color: '#4CAF50',
       legendFontColor: '#7F7F7F',
       legendFontSize: 15,
     },
     {
-      name: 'Failed',
+      name: t('Failed'),
       population: 15,
       color: '#F44336',
       legendFontColor: '#7F7F7F',
@@ -70,7 +72,7 @@ const HistoryChartScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Monthly Scan Activity</Text>
+        <Text style={styles.chartTitle}>{t('Monthly Scan Activity')}</Text>
         {/* <LineChart
           data={lineData}
           width={screenWidth - 32}
@@ -82,7 +84,7 @@ const HistoryChartScreen: React.FC = () => {
       </View>
 
       <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Success Rate</Text>
+        <Text style={styles.chartTitle}>{t('Success Rate')}</Text>
         {/* <BarChart
           data={barData}
           width={screenWidth - 32}
@@ -96,7 +98,7 @@ const HistoryChartScreen: React.FC = () => {
       </View>
 
       <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Result Distribution</Text>
+        <Text style={styles.chartTitle}>{t('Result Distribution')}</Text>
         {/* <PieChart
           data={pieData}
           width={screenWidth - 32}
@@ -112,15 +114,15 @@ const HistoryChartScreen: React.FC = () => {
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>1,234</Text>
-          <Text style={styles.statLabel}>Total Scans</Text>
+          <Text style={styles.statLabel}>{t('Total Scans')}</Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>85%</Text>
-          <Text style={styles.statLabel}>Success Rate</Text>
+          <Text style={styles.statLabel}>{t('Success Rate')}</Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>42</Text>
-          <Text style={styles.statLabel}>Today</Text>
+          <Text style={styles.statLabel}>{t('Today')}</Text>
         </View>
       </View>
     </ScrollView>
