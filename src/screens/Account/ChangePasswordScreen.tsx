@@ -7,11 +7,15 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../hooks/useAuth';
 
 const ChangePasswordScreen: React.FC = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -25,7 +29,7 @@ const ChangePasswordScreen: React.FC = () => {
     }));
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (!formData.currentPassword.trim()) {
       Alert.alert(t('Error'), t('Current password is required'));
       return;
@@ -46,13 +50,26 @@ const ChangePasswordScreen: React.FC = () => {
       return;
     }
 
-    // Here you would typically call an API to change the password
-    Alert.alert(t('Success'), t('Password changed successfully'));
-    setFormData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
+    try {
+      setIsLoading(true);
+      
+      // Here you would typically call an API to change the password
+      // Simulating API call with timeout
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Success
+      Alert.alert(t('Success'), t('Password changed successfully'));
+      setFormData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (error) {
+      Alert.alert(t('Error'), t('Failed to change password. Please try again.'));
+      console.error('Password change error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -94,8 +111,16 @@ const ChangePasswordScreen: React.FC = () => {
           />
         </View>
 
-        <TouchableOpacity style={styles.changeButton} onPress={handleChangePassword}>
-          <Text style={styles.changeButtonText}>{t('Change Password')}</Text>
+        <TouchableOpacity 
+          style={styles.changeButton} 
+          onPress={handleChangePassword}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.changeButtonText}>{t('Change Password')}</Text>
+          )}
         </TouchableOpacity>
 
         <View style={styles.passwordRequirements}>

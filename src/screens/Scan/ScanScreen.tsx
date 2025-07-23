@@ -10,7 +10,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+const Icon = require('react-native-vector-icons/Feather').default;
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -19,18 +19,11 @@ import Animated, {
   withTiming, 
   Easing
 } from 'react-native-reanimated';
-// import { RNCamera } from 'react-native-camera';
-// import { useDispatch } from 'react-redux';
-// import { addHistoryItem } from '../../redux/slices/historySlice';
-
-// const { width: _width, height: _height } = Dimensions.get('window');
 
 const ScanScreen: React.FC = () => {
   const { t } = useTranslation();
   const [isScanning, setIsScanning] = useState(false);
   const [hasHealthData, setHasHealthData] = useState(false);
-  // const cameraRef = useRef<RNCamera>(null);
-  // const dispatch = useDispatch();
   
   // Animation values for heart icon
   const scale = useSharedValue(1);
@@ -57,14 +50,12 @@ const ScanScreen: React.FC = () => {
       withTiming(1.4, { duration: 200 }),
       withTiming(1, { duration: 200 })
     );
-    
     // Create rotation effect
     rotation.value = withSequence(
       withTiming(-10, { duration: 100 }),
       withTiming(10, { duration: 100 }),
       withTiming(0, { duration: 100 })
     );
-    
     // Create opacity effect
     opacity.value = withSequence(
       withTiming(0.7, { duration: 150 }),
@@ -75,7 +66,6 @@ const ScanScreen: React.FC = () => {
   const handleScan = async () => {
     // Animate heart icon
     animateHeartIcon();
-    
     setIsScanning(true);
     // Simulate face scanning process
     setTimeout(() => {
@@ -95,7 +85,6 @@ const ScanScreen: React.FC = () => {
         Alert.alert(t('Failed'), t('Face recognition failed. Please try again.'));
       }
 
-      // dispatch(addHistoryItem(mockResult));
     }, 3000);
   };
 

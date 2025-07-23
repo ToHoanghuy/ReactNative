@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,22 +7,37 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { useAppSelector } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
 import { updateUserProfile } from '../../redux/slices/userSlice';
+import { useAuth } from '../../hooks/useAuth';
 
 const PersonalInfoScreen: React.FC = () => {
   const dispatch = useDispatch();
   const { t } = useTranslation();
+  const { user, updateUser } = useAuth();
   const userProfile = useAppSelector((state: RootState) => state.user.profile);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: userProfile?.name || '',
-    email: userProfile?.email || '',
+    name: user?.name || userProfile?.name || '',
+    email: user?.email || userProfile?.email || '',
     phone: userProfile?.phone || '',
   });
+
+  // Update form data when user info changes
+  useEffect(() => {
+    if (user) {
+      setFormData(prevData => ({
+        ...prevData,
+        name: user.name || prevData.name,
+        email: user.email || prevData.email,
+      }));
+    }
+  }, [user]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -31,7 +46,7 @@ const PersonalInfoScreen: React.FC = () => {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim()) {
       Alert.alert(t('Error'), t('Name is required'));
       return;
@@ -42,8 +57,30 @@ const PersonalInfoScreen: React.FC = () => {
       return;
     }
 
-    dispatch(updateUserProfile(formData));
-    Alert.alert(t('Success'), t('Profile updated successfully'));
+    try {
+      setIsLoading(true);
+      
+      // Update local user profile in Redux
+      dispatch(updateUserProfile(formData));
+      
+      // Update auth user info in Redux and storage
+      if (user) {
+        updateUser({
+          name: formData.name,
+          email: formData.email,
+        });
+      }
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      Alert.alert(t('Success'), t('Profile updated successfully'));
+    } catch (error) {
+      Alert.alert(t('Error'), t('Failed to update profile. Please try again.'));
+      console.error('Profile update error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -85,8 +122,16 @@ const PersonalInfoScreen: React.FC = () => {
           />
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>{t('Save Changes')}</Text>
+        <TouchableOpacity 
+          style={styles.saveButton} 
+          onPress={handleSave}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>{t('Save Changes')}</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>

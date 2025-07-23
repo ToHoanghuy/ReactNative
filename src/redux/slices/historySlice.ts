@@ -7,6 +7,15 @@ export interface HistoryItem {
   result: 'success' | 'failed';
   confidence: number;
   image?: string;
+  wellnessScore?: number;
+  breathingRate?: number;
+  breathingRateUnit?: string;
+  heartRate?: number;
+  heartRateUnit?: string;
+  stressLevel?: number;
+  stressCategory?: string;
+  heartRateVariability?: number;
+  hrvUnit?: string;
 }
 
 interface HistoryState {

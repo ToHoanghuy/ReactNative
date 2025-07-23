@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -13,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
 import { AccountStackParamList } from '../../types/navigation';
+import { useAuth } from '../../hooks/useAuth';
 
 type NavigationProp = StackNavigationProp<AccountStackParamList, 'AccountMain'>;
 
@@ -20,6 +22,26 @@ const AccountMainScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
   const userProfile = useAppSelector((state: RootState) => state.user.profile);
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert(
+      t('Logout'),
+      t('Are you sure you want to logout?'),
+      [
+        {
+          text: t('Cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('Logout'),
+          onPress: () => logout(),
+          style: 'destructive',
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   const menuItems = [
     {
@@ -28,14 +50,37 @@ const AccountMainScreen: React.FC = () => {
       onPress: () => navigation.navigate('PersonalInfo'),
     },
     {
+      title: t('Notifications'),
+      icon: '🔔',
+      toggle: true,
+    },
+    {
+      title: t('Change Password'),
+      icon: '🔑',
+      onPress: () => navigation.navigate('ChangePassword'),
+    },
+    {
       title: t('Change Language'),
       icon: '🌐',
       onPress: () => navigation.navigate('ChangeLanguage'),
     },
     {
-      title: t('Change Password'),
+      title: t('Package'),
+      icon: '🎁',
+    },
+    {
+      title: t('Contact Us'),
+      icon: '📞',
+    },
+    {
+      title: t('Privacy Policy'),
       icon: '🔒',
-      onPress: () => navigation.navigate('ChangePassword'),
+    },
+    {
+      title: t('Logout'),
+      icon: '🚪',
+      onPress: handleLogout,
+      color: '#FF5252',
     },
   ];
 
@@ -44,22 +89,45 @@ const AccountMainScreen: React.FC = () => {
       {/* Header with welcome message */}
       <View style={styles.header}>
         <Text style={styles.welcomeText}>{t('Chào mừng,')}</Text>
-        <Text style={styles.userName}>{userProfile?.name || 'Huyyyy'}</Text>
+        <Text style={styles.userName}>{user?.name || 'User'}</Text>
       </View>
 
       {/* Menu Items in a Card Layout */}
       <View style={styles.menuCardsContainer}>
-        {/* Personal Information */}
-        <TouchableOpacity 
-          style={styles.menuCard}
-          onPress={() => navigation.navigate('PersonalInfo')}>
-          <View style={styles.menuCardContent}>
-            <View style={styles.iconContainer}>
-              <Text style={styles.menuIcon}>📋</Text>
+        {menuItems.map((item, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.menuCard, 
+              item.color ? { borderColor: item.color + '20', borderWidth: 1 } : null
+            ]}
+            onPress={item.onPress}
+            disabled={!item.onPress}
+          >
+            <View style={styles.menuCardContent}>
+              <View style={[
+                styles.iconContainer,
+                item.color ? { backgroundColor: item.color + '20' } : null
+              ]}>
+                <Text style={styles.menuIcon}>{item.icon}</Text>
+              </View>
+              <Text style={[
+                styles.menuTitle, 
+                item.color ? { color: item.color } : null
+              ]}>
+                {item.title}
+              </Text>
             </View>
-            <Text style={styles.menuTitle}>{t('Thông tin cá nhân')}</Text>
-          </View>
-        </TouchableOpacity>
+            
+            {item.toggle && (
+              <View style={styles.toggleContainer}>
+                <View style={styles.toggle}>
+                  <View style={styles.toggleCircle} />
+                </View>
+              </View>
+            )}
+          </TouchableOpacity>
+        ))}
         
         {/* Notifications */}
         <TouchableOpacity style={styles.menuCard}>
@@ -130,15 +198,18 @@ const AccountMainScreen: React.FC = () => {
           </View>
         </TouchableOpacity>
         
-        {/* Health Information Sources */}
-        <TouchableOpacity style={styles.menuCard}>
+        {/* Logout */}
+        <TouchableOpacity 
+          style={[styles.menuCard, { borderColor: '#ffebee', borderWidth: 1 }]}
+          onPress={handleLogout}>
           <View style={styles.menuCardContent}>
-            <View style={styles.iconContainer}>
-              <Text style={styles.menuIcon}>📚</Text>
+            <View style={[styles.iconContainer, { backgroundColor: '#ffebee' }]}>
+              <Text style={styles.menuIcon}>�</Text>
             </View>
-            <Text style={styles.menuTitle}>{t('Nguồn Thông Tin Sức Khỏe')}</Text>
+            <Text style={[styles.menuTitle, { color: '#F44336' }]}>{t('Logout')}</Text>
           </View>
         </TouchableOpacity>
+
       </View>
     </ScrollView>
   );
@@ -150,7 +221,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#006D5B',
+    backgroundColor: '#2196F3',
     paddingTop: 50,
     paddingBottom: 60,
     paddingHorizontal: 20,
