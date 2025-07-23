@@ -8,6 +8,7 @@ import {name as appName} from './app.json';
 
 // Enable hot reload tracking
 if (__DEV__) {
+console.log('App is running in DEBUG mode');
   const originConsoleError = console.error;
   console.error = (...args) => {
     // Ignore specific hot reload related warnings

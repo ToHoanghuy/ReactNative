@@ -132,7 +132,15 @@ const resources = {
       'Scan Now': 'Scan Now',
       'Your health data is now available.': 'Your health data is now available.',
       'You have no health scan data yet. Please scan to get health data.': 'You have no health scan data yet. Please scan to get health data.',
-      // Thêm các chuỗi khác tại đây
+      'Please enter a valid email address': 'Please enter a valid email address',
+      'Email not found in our system': 'Email not found in our system',
+      // Strings for OTPVerificationScreen
+      'OTP Verification': 'OTP Verification',
+      'Enter the 6-digit code sent to': 'Enter the 6-digit code sent to',
+      'Didn\'t receive the code?': 'Didn\'t receive the code?',
+      'Resend code in {{time}}s': 'Resend code in {{time}}s',
+      'Resend': 'Resend',
+      'Verify': 'Verify',
     },
   },
   vi: {
@@ -262,6 +270,15 @@ const resources = {
       'Scan Now': 'Quét ngay',
       'Your health data is now available.': 'Dữ liệu sức khỏe của bạn đã có sẵn.',
       'You have no health scan data yet. Please scan to get health data.': 'Bạn chưa có dữ liệu sức khỏe quét nào. Vui lòng quét để có dữ liệu sức khỏe.',
+      'Please enter a valid email address': 'Vui lòng nhập địa chỉ email hợp lệ',
+      'Email not found in our system': 'Email không được tìm thấy trong hệ thống',
+      // Strings for OTPVerificationScreen
+      'OTP Verification': 'Xác thực OTP',
+      'Enter the 6-digit code sent to': 'Nhập mã 6 chữ số đã gửi đến',
+      'Didn\'t receive the code?': 'Chưa nhận được mã?',
+      'Resend code in {{time}}s': 'Gửi lại mã sau {{time}} giây',
+      'Resend': 'Gửi lại',
+      'Verify': 'Xác thực',
     },
   },
 };

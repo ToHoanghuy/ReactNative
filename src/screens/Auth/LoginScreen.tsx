@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   ActivityIndicator,
   StatusBar,
+  Linking,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -20,6 +20,7 @@ import { AuthStackParamList } from '../../types/navigation';
 import { useAuth } from '../../hooks/useAuth';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
+import Modal from '../../components/Modal';
 const Icon = require('react-native-vector-icons/Feather').default;
 import LinearGradient from 'react-native-linear-gradient';
 
@@ -35,62 +36,125 @@ const LoginScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Modal states
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState<'success' | 'error' | 'info'>('info');
+  const [modalButtons, setModalButtons] = useState<{
+    text: string;
+    onPress: () => void;
+    type?: 'default' | 'primary' | 'danger';
+  }[]>([]);
+
+  // Show modal helper function
+  const showModal = (
+    title: string, 
+    message: string, 
+    type: 'success' | 'error' | 'info' = 'info',
+    buttons = [{ text: 'OK', onPress: () => setModalVisible(false) }]
+  ) => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalType(type);
+    setModalButtons(buttons);
+    setModalVisible(true);
+  };
 
   const handleLogin = async () => {
-    // Form validation
+    // Reset any previous loading state
+    setIsLoading(false);
+    
+    // Form validation - improved with detailed error messages
     if (!email.trim()) {
-      Alert.alert(t('Error'), t('Email is required'));
+      showModal(t('Error'), t('Email không được để trống'), 'error');
+      return;
+    }
+    
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      showModal(t('Error'), t('Email không đúng định dạng'), 'error');
       return;
     }
     
     if (!password.trim()) {
-      Alert.alert(t('Error'), t('Password is required'));
+      showModal(t('Error'), t('Mật khẩu không được để trống'), 'error');
+      return;
+    }
+    
+    // Password length validation
+    if (password.trim().length < 6) {
+      showModal(t('Error'), t('Mật khẩu phải có ít nhất 6 ký tự'), 'error');
       return;
     }
     
     try {
       setIsLoading(true);
       
-      // Find the user account with matching email
+      // Find the user account with matching email (case insensitive)
       const account = accounts.find(acc => acc.email.toLowerCase() === email.toLowerCase());
       
-      // Check if account exists and password matches
-      if (account && account.password === password) {
-        // Create user object without password
-        const user = {
-          id: account.id,
-          email: account.email,
-          name: account.name,
-        };
-        
-        // Generate a mock token
-        const mockToken = 'mock-jwt-token-' + Date.now();
-        
-        // Add a slight delay to simulate network request
-        setTimeout(() => {
-          // Dispatch login action to Redux
-          login(mockToken, user);
-          setIsLoading(false);
-        }, 1000);
-      } else {
+      // Check if account exists
+      if (!account) {
         setTimeout(() => {
           setIsLoading(false);
-          Alert.alert(t('Error'), t('Invalid email or password'));
+          showModal(t('Error'), t('Tài khoản không tồn tại'), 'error');
         }, 1000);
+        return;
       }
+      
+      // Check if password matches
+      if (account.password !== password) {
+        setTimeout(() => {
+          setIsLoading(false);
+          showModal(t('Error'), t('Mật khẩu không chính xác'), 'error');
+        }, 1000);
+        return;
+      }
+      
+      // If both checks pass, create user object without password
+      const user = {
+        id: account.id,
+        email: account.email,
+        name: account.name,
+      };
+      
+      // Generate a mock token
+      const mockToken = 'mock-jwt-token-' + Date.now();
+      
+      // Add a slight delay to simulate network request
+      setTimeout(() => {
+        // Dispatch login action to Redux
+        login(mockToken, user);
+        setIsLoading(false);
+      }, 1000);
     } catch (error) {
       setIsLoading(false);
-      Alert.alert(t('Error'), t('Login failed. Please try again.'));
+      showModal(t('Error'), t('Đăng nhập thất bại. Vui lòng thử lại.'), 'error');
       console.error('Login error:', error);
     }
   };
 
   const handleForgotPassword = () => {
-    navigation.navigate('ForgotPassword');
+    try {
+      navigation.navigate('ForgotPassword');
+    } catch (error) {
+      console.error('Navigation error:', error);
+      // Fallback if navigation fails
+      showModal('Error', 'Unable to navigate to forgot password screen', 'error');
+    }
   };
 
   const handleRegister = () => {
-    navigation.navigate('Register');
+    try {
+      navigation.navigate('Register');
+    } catch (error) {
+      console.error('Navigation error:', error);
+      // Fallback if navigation fails
+      showModal('Error', 'Unable to navigate to register screen', 'error');
+    }
   };
 
   return (
@@ -101,7 +165,7 @@ const LoginScreen: React.FC = () => {
     >
       <StatusBar backgroundColor="#2196F3" barStyle="light-content" />
       <View style={styles.backgroundContainer}>
-        {/* <Image style = {styles.logo} source={require('../../assets/images/logo.png')}  /> */}
+        <Image style = {styles.logo} source={require('../../assets/images/logo.png')}  />
 
         <View style={styles.formContainer}>
           <View style={styles.inputWrapper}>
@@ -151,9 +215,12 @@ const LoginScreen: React.FC = () => {
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={styles.loginButton}
+            style={[
+              styles.loginButton,
+              (!email.trim() || !password.trim()) && styles.loginButtonDisabled
+            ]}
             onPress={handleLogin}
-            disabled={isLoading || !email || !password}
+            disabled={isLoading || !email.trim() || !password.trim()}
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
@@ -162,12 +229,15 @@ const LoginScreen: React.FC = () => {
             )}
           </TouchableOpacity>
           
-          <View style={styles.otherSignInContainer}>
+          <TouchableOpacity 
+            style={styles.otherSignInContainer}
+            onPress={() => Linking.openURL('https://jbabrands.com/app-login-page/?redirect_uri=jbaai://login')}
+          >
             <View style={styles.circleLogo}>
               {/* <Text style={styles.jbaLogoSmall}>Health Care</Text> */}
-              {/* <Image style = {{width: 30, height: 30, borderRadius: 15}} source={require('../../assets/images/logo.png')}></Image> */}
+              <Image style = {{width: 30, height: 30, borderRadius: 15}} source={require('../../assets/images/logo.png')}></Image>
             </View>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.registerContainer}>
             <Text style={styles.noAccountText}>{t('Chưa có tài khoản?')}</Text>
@@ -177,6 +247,16 @@ const LoginScreen: React.FC = () => {
           </View>
         </View>
       </View>
+      
+      {/* Custom Modal */}
+      <Modal
+        visible={modalVisible}
+        title={modalTitle}
+        message={modalMessage}
+        type={modalType}
+        buttons={modalButtons}
+        onClose={() => setModalVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -262,6 +342,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 30,
+  },
+  loginButtonDisabled: {
+    backgroundColor: '#FFB74D', // Lighter orange for disabled state
+    opacity: 0.7,
   },
   loginButtonText: {
     color: 'white',

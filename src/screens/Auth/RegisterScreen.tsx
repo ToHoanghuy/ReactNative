@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,12 +16,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { AuthStackParamList } from '../../types/navigation';
+import { AuthStackParamList, RootStackParamList } from '../../types/navigation';
 import { useAuth } from '../../hooks/useAuth';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { addAccount } from '../../redux/slices/accountsSlice';
 import { usePersistentForm } from '../../components/PersistentFormManager';
+import Modal from '../../components/Modal';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, 'Register'>;
@@ -47,6 +47,31 @@ const RegisterScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Modal states
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState<'success' | 'error' | 'info'>('info');
+  const [modalButtons, setModalButtons] = useState<{
+    text: string;
+    onPress: () => void;
+    type?: 'default' | 'primary' | 'danger';
+  }[]>([]);
+
+  // Show modal helper function
+  const showModal = (
+    title: string, 
+    message: string, 
+    type: 'success' | 'error' | 'info' = 'info',
+    buttons = [{ text: 'OK', onPress: () => setModalVisible(false) }]
+  ) => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalType(type);
+    setModalButtons(buttons);
+    setModalVisible(true);
+  };
 
   // Load form data from persistent storage
   const handleFormDataLoaded = useCallback((data: any) => {
@@ -88,34 +113,54 @@ const RegisterScreen: React.FC = () => {
   const handleRegister = async () => {
     // Form validation
     if (!name.trim()) {
-      Alert.alert(t('Error'), t('Name is required'));
+      showModal(t('Error'), t('Name is required'), 'error');
       return;
     }
 
     if (!email.trim()) {
-      Alert.alert(t('Error'), t('Email is required'));
+      showModal(t('Error'), t('Email is required'), 'error');
       return;
     }
     
     if (!phone.trim()) {
-      Alert.alert(t('Error'), t('Phone number is required'));
+      showModal(t('Error'), t('Phone number is required'), 'error');
       return;
     }
     
     if (!password.trim()) {
-      Alert.alert(t('Error'), t('Password is required'));
+      showModal(t('Error'), t('Password is required'), 'error');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert(t('Error'), t('Passwords do not match'));
+      showModal(t('Error'), t('Passwords do not match'), 'error');
+      return;
+    }
+    
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showModal(t('Error'), t('Please enter a valid email address'), 'error');
+      return;
+    }
+    
+    // Phone format validation
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phone)) {
+      showModal(t('Error'), t('Please enter a valid 10-digit phone number'), 'error');
+      return;
+    }
+    
+    // Password strength validation
+    if (password.length < 6) {
+      showModal(t('Error'), t('Password must be at least 6 characters long'), 'error');
       return;
     }
     
     // Check if email already exists
     const emailExists = accounts.some(account => account.email.toLowerCase() === email.toLowerCase());
     if (emailExists) {
-      Alert.alert(t('Error'), t('Email already in use'));
+      showModal(t('Error'), t('Email already in use'), 'error');
       return;
     }
     
@@ -161,10 +206,30 @@ const RegisterScreen: React.FC = () => {
         clearForm();
         
         setIsLoading(false);
+        
+        // Show success message and navigate to Main screen
+        showModal(
+          t('Success'), 
+          t('Registration completed successfully'),
+          'success',
+          [{ 
+            text: 'OK', 
+            // type: 'primary',
+            onPress: () => {
+              setModalVisible(false);
+              // Navigate to Main screen on successful registration
+              const rootNavigation = navigation.getParent();
+              if (rootNavigation) {
+                rootNavigation.navigate('Main');
+              }
+            }
+          }]
+        );
       }, 1500);
-    } catch (error) {
+    } catch (error: any) {
       setIsLoading(false);
-      Alert.alert(t('Error'), t('Registration failed. Please try again.'));
+      showModal(t('Error'), t('Registration failed. Please try again.'), 'error');
+      console.error('Registration error:', error);
       console.error('Registration error:', error);
     }
   };
@@ -198,7 +263,7 @@ const RegisterScreen: React.FC = () => {
         <View style={styles.formContainer}>
           {/* Tên người dùng */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Tên  người dùng <Text style={styles.required}>*</Text></Text>
+            <Text style={styles.fieldLabel}>Tên người dùng <Text style={styles.required}>*</Text></Text>
             <View style={styles.inputWrapper}>
               <Icon name="user" size={20} color="#555" style={styles.fieldIcon} />
               <TextInput
@@ -343,6 +408,16 @@ const RegisterScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      
+      {/* Custom Modal */}
+      <Modal
+        visible={modalVisible}
+        title={modalTitle}
+        message={modalMessage}
+        type={modalType}
+        buttons={modalButtons}
+        onClose={() => setModalVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
   

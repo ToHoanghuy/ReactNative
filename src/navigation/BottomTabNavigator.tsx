@@ -85,13 +85,13 @@ function AnimatedTabIcon({ routeName, color, size, focused }: {
   let iconName: string;
 
   if (routeName === 'History') {
-    iconName = 'history';
+    iconName = 'clock';  
   } else if (routeName === 'Scan') {
-    iconName = 'camera-alt';
+    iconName = 'camera';  
   } else if (routeName === 'Account') {
-    iconName = 'person';
+    iconName = 'user'; 
   } else {
-    iconName = 'help';
+    iconName = 'help-circle';  
   }
 
   // Animation values

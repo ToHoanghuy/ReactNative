@@ -4,6 +4,8 @@ import { AuthStackParamList } from '../types/navigation';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import RegisterScreen from '../screens/Auth/RegisterScreen';
 import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
+import OTPVerificationScreen from '../screens/Auth/OTPVerificationScreen';
+import SetupNewPasswordScreen from '../screens/Auth/SetupNewPasswordScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Stack = createStackNavigator<AuthStackParamList>();
@@ -75,6 +77,8 @@ const AuthNavigator: React.FC = () => {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
+      <Stack.Screen name="SetupNewPassword" component={SetupNewPasswordScreen} />
     </Stack.Navigator>
   );
 };

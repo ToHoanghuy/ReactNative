@@ -6,31 +6,76 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator,
+  StatusBar,
+  SafeAreaView
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../types/navigation';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../redux/store';
+import Modal from '../../components/Modal';
+const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
 
 const ForgotPasswordScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
+  const accounts = useSelector((state: RootState) => state.accounts.accounts);
   
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  
+  // Modal states
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState<'success' | 'error' | 'info'>('info');
+  const [modalButtons, setModalButtons] = useState<{
+    text: string;
+    onPress: () => void;
+    type?: 'default' | 'primary' | 'danger';
+  }[]>([]);
+
+  // Show modal helper function
+  const showModal = (
+    title: string, 
+    message: string, 
+    type: 'success' | 'error' | 'info' = 'info',
+    buttons = [{ text: 'OK', onPress: () => setModalVisible(false) }]
+  ) => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalType(type);
+    setModalButtons(buttons);
+    setModalVisible(true);
+  };
 
   const handleResetPassword = async () => {
     // Form validation
     if (!email.trim()) {
-      Alert.alert(t('Error'), t('Email is required'));
+      showModal(t('Error'), t('Email is required'), 'error');
+      return;
+    }
+    
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showModal(t('Error'), t('Please enter a valid email address'), 'error');
+      return;
+    }
+    
+    // Check if email exists in our system
+    const emailExists = accounts.some(account => account.email.toLowerCase() === email.toLowerCase());
+    if (!emailExists) {
+      showModal(t('Error'), t('Email not found in our system'), 'error');
       return;
     }
     
@@ -41,11 +86,13 @@ const ForgotPasswordScreen: React.FC = () => {
       // For this example, we'll simulate a successful request after a short delay
       setTimeout(() => {
         setIsLoading(false);
-        setIsSubmitted(true);
+        
+        // Navigate to OTP verification screen with the email
+        navigation.navigate('OTPVerification', { email });
       }, 1500);
     } catch (error) {
       setIsLoading(false);
-      Alert.alert(t('Error'), t('Password reset request failed. Please try again.'));
+      showModal(t('Error'), t('Password reset request failed. Please try again.'), 'error');
       console.error('Password reset error:', error);
     }
   };
@@ -55,159 +102,178 @@ const ForgotPasswordScreen: React.FC = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor="white" barStyle="light-content" />
+      <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={handleBackToLogin}
         >
-          <Text style={styles.backButtonText}>← {t('Back to Login')}</Text>
+          <Icon name="chevron-left" size={30} color="#000" />
         </TouchableOpacity>
+      </View>
 
-        <View style={styles.logoContainer}>
-          {/* <Image
-            source={require('../../assets/images/healthcare.jpg')}
-            style={styles.logo}
-            resizeMode="contain"
-          /> */}
-          <Text style={styles.appName}>{t('Health Monitor')}</Text>
-        </View>
+      <View style={styles.imageContainer}>
+        <Image
+          source={require('../../assets/images/forgot_password.png')}
+          style={styles.forgotImage}
+          resizeMode="contain"
+        />
+      </View>
 
+      <KeyboardAvoidingView
+        style={styles.formWrapper}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      >
         <View style={styles.formContainer}>
           {!isSubmitted ? (
             <>
-              <Text style={styles.title}>{t('Forgot Password')}</Text>
-              <Text style={styles.subtitle}>
-                {t('Enter your email address and we will send you instructions to reset your password')}
-              </Text>
+              
+                <Text style={styles.title}>{t('Xác thực')}</Text>
+              
+              <View style={styles.titleContainer}>
+                <View style={styles.inputContainer}>
+                  <View style={styles.iconContainer}>
+                    <Icon name="mail" size={24} color="#aaa" />
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={t('Nhập Email của bạn !')}
+                    placeholderTextColor="#999"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={email}
+                    onChangeText={setEmail}
+                  />
+                </View>
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>{t('Email')}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={t('Enter your email')}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
-                />
+                <TouchableOpacity
+                  style={styles.resetButton}
+                  onPress={handleResetPassword}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.resetButtonText}>{t('Gửi')}</Text>
+                  )}
+                </TouchableOpacity>
               </View>
-
-              <TouchableOpacity
-                style={styles.resetButton}
-                onPress={handleResetPassword}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.resetButtonText}>{t('Reset Password')}</Text>
-                )}
-              </TouchableOpacity>
+              
             </>
           ) : (
             <View style={styles.successContainer}>
               <Text style={styles.successIcon}>✓</Text>
-              <Text style={styles.successTitle}>{t('Email Sent')}</Text>
+              <Text style={styles.successTitle}>{t('Email Đã Gửi')}</Text>
               <Text style={styles.successMessage}>
-                {t('Password reset instructions have been sent to your email address. Please check your inbox.')}
+                {t('Hướng dẫn đặt lại mật khẩu đã được gửi đến địa chỉ email của bạn. Vui lòng kiểm tra hộp thư đến.')}
               </Text>
               <TouchableOpacity
                 style={styles.backToLoginButton}
                 onPress={handleBackToLogin}
               >
-                <Text style={styles.backToLoginText}>{t('Back to Login')}</Text>
+                <Text style={styles.backToLoginText}>{t('Quay lại Đăng nhập')}</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+      
+      {/* Custom Modal */}
+      <Modal
+        visible={modalVisible}
+        title={modalTitle}
+        message={modalMessage}
+        type={modalType}
+        buttons={modalButtons}
+        onClose={() => setModalVisible(false)}
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'white',
   },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: 20,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 15,
   },
   backButton: {
-    marginBottom: 20,
+    padding: 8,
   },
-  backButtonText: {
-    fontSize: 16,
-    color: '#2196F3',
-  },
-  logoContainer: {
+  imageContainer: {
     alignItems: 'center',
-    marginBottom: 30,
+    justifyContent: 'center',
+    paddingVertical: 20,
   },
-  logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 10,
+  forgotImage: {
+    width: '80%',
+    height: 180,
   },
-  appName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#2196F3',
+  formWrapper: {
+    flex: 1,
   },
   formContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    flex: 1,
+    backgroundColor: '#2196F3',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingTop: 0,
+  },
+  titleContainer: {
+    flex: 1,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    backgroundColor: 'white',
+    width: '100%',
+    
+
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 20,
-    lineHeight: 20,
+    color: 'white',
+    marginVertical: 15,
+    textAlign: 'center',
   },
   inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    marginBottom: 5,
-    color: '#666',
-  },
-  input: {
+    marginLeft:'5%',
+    width: '90%',
+    marginTop: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 8,
-    paddingVertical: 10,
+    borderRadius: 30,
     paddingHorizontal: 15,
+    marginBottom: 30,
+    height: 60,
+  },
+  iconContainer: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    color: '#333',
+    height: 60,
   },
   resetButton: {
-    backgroundColor: '#2196F3',
-    borderRadius: 8,
-    paddingVertical: 12,
+    backgroundColor: '#FF9800',
+    borderRadius: 30,
+    paddingVertical: 15,
     alignItems: 'center',
+    marginHorizontal: 40,
   },
   resetButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: 'bold',
   },
   successContainer: {
@@ -233,8 +299,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   backToLoginButton: {
-    backgroundColor: '#2196F3',
-    borderRadius: 8,
+    backgroundColor: '#FF9800',
+    borderRadius: 30,
     paddingVertical: 12,
     paddingHorizontal: 40,
   },

@@ -110,7 +110,7 @@ const ScanScreen: React.FC = () => {
             <View style={styles.healthGrid}>
               <View style={styles.indicatorRow}>
                 <View style={[styles.healthIndicator, styles.redIndicator]}>
-                  <Icon name="heart-pulse" size={18} color="white" />
+                  <Icon name="activity" size={18} color="white" />
                   <Text style={styles.indicatorText}>{t('Blood Pressure')}</Text>
                 </View>
                 <View style={[styles.healthIndicator, styles.redIndicator]}>
@@ -118,37 +118,37 @@ const ScanScreen: React.FC = () => {
                   <Text style={styles.indicatorText}>{t('Heart Rate')}</Text>
                 </View>
                 <View style={[styles.healthIndicator, styles.redIndicator]}>
-                  <Icon name="heart-pulse" size={18} color="white" />
+                  <Icon name="activity" size={18} color="white" />
                   <Text style={styles.indicatorText}>{t('Heart Rate Variability')}</Text>
                 </View>
               </View>
 
               <View style={styles.indicatorRow}>
                 <View style={[styles.healthIndicator, styles.redIndicator]}>
-                  <Icon name="lungs" size={18} color="white" />
+                  <Icon name="wind" size={18} color="white" />
                   <Text style={styles.indicatorText}>{t('Oxygen Saturation')}</Text>
                 </View>
                 <View style={[styles.healthIndicator, styles.redIndicator]}>
-                  <Icon name="brain" size={18} color="white" />
+                  <Icon name="activity" size={18} color="white" />
                   <Text style={styles.indicatorText}>{t('Sympathetic Stress')}</Text>
                 </View>
                 <View style={[styles.healthIndicator, styles.redIndicator]}>
-                  <Icon name="meditation" size={18} color="white" />
+                  <Icon name="sun" size={18} color="white" />
                   <Text style={styles.indicatorText}>{t('Parasympathetic Activity')}</Text>
                 </View>
               </View>
 
               <View style={styles.indicatorRow}>
                 <View style={[styles.healthIndicator, styles.blueIndicator]}>
-                  <Icon name="test-tube" size={18} color="white" />
+                  <Icon name="droplet" size={18} color="white" />
                   <Text style={styles.indicatorText}>{t('High Total Cholesterol Risk')}</Text>
                 </View>
                 <View style={[styles.healthIndicator, styles.blueIndicator]}>
-                  <Icon name="chart-line-variant" size={18} color="white" />
+                  <Icon name="trending-up" size={18} color="white" />
                   <Text style={styles.indicatorText}>{t('High Blood Pressure Risk')}</Text>
                 </View>
                 <View style={[styles.healthIndicator, styles.blueIndicator]}>
-                  <Icon name="water" size={18} color="white" />
+                  <Icon name="droplet" size={18} color="white" />
                   <Text style={styles.indicatorText}>{t('Low Hemoglobin Risk')}</Text>
                 </View>
               </View>
@@ -157,7 +157,7 @@ const ScanScreen: React.FC = () => {
 
           <View style={styles.faceScanContainer}>
             <View style={styles.phoneWithFaceScan}>
-              <Icon name="face-recognition" size={40} color="#333" />
+              <Icon name="user" size={40} color="#333" />
             </View>
           </View>
         </View>
@@ -172,7 +172,7 @@ const ScanScreen: React.FC = () => {
             disabled={isScanning}>
             <View style={styles.scanButtonIcon}>
               <Animated.View style={animatedIconStyle}>
-                <Icon name="heart-pulse" size={24} color="white" />
+                <Icon name="activity" size={24} color="white" />
               </Animated.View>
             </View>
             <Text style={styles.scanButtonText}>{t('Scan Now')}</Text>
