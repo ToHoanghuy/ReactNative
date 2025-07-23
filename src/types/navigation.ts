@@ -1,7 +1,12 @@
 export type RootStackParamList = {
-  Home: undefined;
-  Profile: undefined;
-  Settings: undefined;
+  Auth: undefined;
+  Main: undefined;
+};
+
+export type AuthStackParamList = {
+  Login: undefined;
+  Register: undefined;
+  ForgotPassword: undefined;
 };
 
 export type BottomTabParamList = {

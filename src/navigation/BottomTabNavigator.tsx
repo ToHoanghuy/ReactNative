@@ -12,7 +12,7 @@ import Animated, {
   withRepeat,
   runOnJS
 } from 'react-native-reanimated';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+const Icon = require('react-native-vector-icons/Feather').default;
 import { BottomTabParamList, HistoryStackParamList, AccountStackParamList } from '../types/navigation';
 import { Dimensions } from 'react-native';
 
@@ -32,7 +32,7 @@ const AccountStack = createStackNavigator<AccountStackParamList>();
 const { width, height } = Dimensions.get('window');
 function HistoryStackNavigator() {
   return (
-    <HistoryStack.Navigator>
+    <HistoryStack.Navigator screenOptions={{ headerShown: false }}>
       <HistoryStack.Screen
         name="HistoryList"
         component={HistoryListScreen}
@@ -103,7 +103,6 @@ function AnimatedTabIcon({ routeName, color, size, focused }: {
   // Update animations when focused state changes
   React.useEffect(() => {
     if (focused) {
-      // Khi tab được chọn: bounce lên, fade in, scale lớn
       opacity.value = withSequence(
         withTiming(0.5, { duration: 80 }),
         withSpring(1, { damping: 12, stiffness: 180 })
@@ -119,7 +118,7 @@ function AnimatedTabIcon({ routeName, color, size, focused }: {
         withSpring(-2, { damping: 10, stiffness: 120 })
       );
     } else {
-      // Khi tab không được chọn: fade out, scale nhỏ, hạ xuống
+      //fade out, scale nhỏ, hạ xuống
       opacity.value = withTiming(0.5, { duration: 180 });
       scale.value = withTiming(0.85, { duration: 180 });
       translateY.value = withTiming(4, { duration: 180 });
@@ -127,10 +126,10 @@ function AnimatedTabIcon({ routeName, color, size, focused }: {
 
     // Hiệu ứng riêng cho từng icon
     if (routeName === 'History' && focused) {
-      // Quay vòng liên tục khi active
+      // Quay vòng khi active
       rotation.value = withRepeat(
-        withTiming(360, { duration: 1200 }),
-        -1,
+        withTiming(-360, { duration: 1200 }),
+        1,
         false
       );
     } else if (routeName === 'History' && !focused) {
@@ -166,15 +165,14 @@ function AnimatedTabIcon({ routeName, color, size, focused }: {
     };
   });
 
-  const AnimatedIcon = Animated.createAnimatedComponent(Icon);
-
   return (
-    <AnimatedIcon
-      name={iconName}
-      size={size}
-      color={color}
-      style={animatedStyle}
-    />
+    <Animated.View style={animatedStyle}>
+      <Icon
+        name={iconName}
+        size={size}
+        color={color}
+      />
+    </Animated.View>
   );
 }
 
@@ -203,9 +201,9 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
   // Animated style cho notch
   const animatedNotchStyle = useAnimatedStyle(() => {
-    const tabBarWidth = width; // Giả sử tab bar rộng 360px, có thể lấy từ layout
+    const tabBarWidth = width; 
     const tabWidthPx = tabBarWidth / state.routes.length;
-    const notchCircleWidth = 64; // Đường kính của notch circle
+    const notchCircleWidth = 64; 
     return {
       position: 'absolute',
       left: notchTranslateX.value * tabBarWidth + tabWidthPx / 2 - notchCircleWidth / 2 ,
