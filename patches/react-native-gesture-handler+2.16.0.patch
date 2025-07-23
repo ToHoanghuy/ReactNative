@@ -1,0 +1,16 @@
+diff --git a/node_modules/react-native-gesture-handler/android/build.gradle b/node_modules/react-native-gesture-handler/android/build.gradle
+index 2b1b282..22c5a13 100644
+--- a/node_modules/react-native-gesture-handler/android/build.gradle
++++ b/node_modules/react-native-gesture-handler/android/build.gradle
+@@ -56,7 +56,10 @@ android {
+ dependencies {
+     //noinspection GradleDynamicVersion
+     implementation "com.facebook.react:react-android:${reactNativeVersion}"
+-
++    implementation "androidx.core:core:1.12.0"
++    implementation "androidx.core:core-ktx:1.12.0"
++    implementation "androidx.appcompat:appcompat:1.6.1"
++    
+     def autoCompleteDependencies = { id ->
+         implementation "$id"
+     }

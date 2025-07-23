@@ -28,6 +28,39 @@ const resources = {
       'Confidence': 'Confidence',
       'success': 'success',
       'failed': 'failed',
+      // Strings for Login Screen
+      'Health Monitor': 'Health Monitor',
+      'Welcome Back': 'Welcome Back',
+      'Log in to your account': 'Log in to your account',
+      'Enter your email': 'Enter your email',
+      'Enter your password': 'Enter your password',
+      'Forgot Password?': 'Forgot Password?',
+      'Log In': 'Log In',
+      'Login': 'Login',
+      'Don\'t have an account?': 'Don\'t have an account?',
+      'Register': 'Register',
+      'Email': 'Email',
+      'Password': 'Password',
+      'Login failed. Please try again.': 'Login failed. Please try again.',
+      // Strings for Register Screen
+      'Create Account': 'Create Account',
+      'Sign up to get started': 'Sign up to get started',
+      'Name': 'Name',
+      'Enter your name': 'Enter your name',
+      'Confirm Password': 'Confirm Password',
+      'Confirm your password': 'Confirm your password',
+      'Registration failed. Please try again.': 'Registration failed. Please try again.',
+      'Already have an account?': 'Already have an account?',
+      'Register Now': 'Register Now',
+      'Back': 'Back',
+      // Strings for Forgot Password Screen
+      'Forgot Password': 'Forgot Password',
+      'Enter your email address and we will send you instructions to reset your password': 'Enter your email address and we will send you instructions to reset your password',
+      'Reset Password': 'Reset Password',
+      'Email Sent': 'Email Sent',
+      'Password reset instructions have been sent to your email address. Please check your inbox.': 'Password reset instructions have been sent to your email address. Please check your inbox.',
+      'Back to Login': 'Back to Login',
+      'Password reset request failed. Please try again.': 'Password reset request failed. Please try again.',
       // Strings for AccountMainScreen
       'Personal Information': 'Personal Information',
       'Change Language': 'Change Language',
@@ -41,6 +74,9 @@ const resources = {
       'Liên hệ với chúng tôi': 'Contact Us',
       'Chính sách bảo mật': 'Privacy Policy',
       'Nguồn Thông Tin Sức Khỏe': 'Health Information Sources',
+      'Logout': 'Logout',
+      'Are you sure you want to logout?': 'Are you sure you want to logout?',
+      'User': 'User',
       // Strings for ChangePasswordScreen
       'Current Password': 'Current Password',
       'New Password': 'New Password',
@@ -125,6 +161,40 @@ const resources = {
       'Confidence': 'Độ tin cậy',
       'success': 'thành công',
       'failed': 'thất bại',
+      // Strings for Login Screen
+      'Health Monitor': 'Giám sát Sức khỏe',
+      'Welcome Back': 'Chào mừng trở lại',
+      'Log in to your account': 'Đăng nhập vào tài khoản của bạn',
+      'Enter your email': 'Nhập email của bạn',
+      'Enter your password': 'Nhập mật khẩu của bạn',
+      'Forgot Password?': 'Quên mật khẩu?',
+      'Log In': 'Đăng nhập',
+      'Login': 'Đăng nhập',
+      'Don\'t have an account?': 'Chưa có tài khoản?',
+      'Register': 'Đăng ký',
+      'Email': 'Email',
+      'Password': 'Mật khẩu',
+      'Login failed. Please try again.': 'Đăng nhập thất bại. Vui lòng thử lại.',
+      'Password is required': 'Yêu cầu nhập mật khẩu',
+      // Strings for Register Screen
+      'Create Account': 'Tạo tài khoản',
+      'Sign up to get started': 'Đăng ký để bắt đầu',
+      'Name': 'Họ tên',
+      'Enter your name': 'Nhập họ tên của bạn',
+      'Confirm Password': 'Xác nhận mật khẩu',
+      'Confirm your password': 'Xác nhận mật khẩu của bạn',
+      'Registration failed. Please try again.': 'Đăng ký thất bại. Vui lòng thử lại.',
+      'Already have an account?': 'Đã có tài khoản?',
+      'Register Now': 'Đăng ký ngay',
+      'Back': 'Quay lại',
+      // Strings for Forgot Password Screen
+      'Forgot Password': 'Quên mật khẩu',
+      'Enter your email address and we will send you instructions to reset your password': 'Nhập địa chỉ email của bạn và chúng tôi sẽ gửi hướng dẫn đặt lại mật khẩu',
+      'Reset Password': 'Đặt lại mật khẩu',
+      'Email Sent': 'Đã gửi email',
+      'Password reset instructions have been sent to your email address. Please check your inbox.': 'Hướng dẫn đặt lại mật khẩu đã được gửi đến địa chỉ email của bạn. Vui lòng kiểm tra hộp thư đến.',
+      'Back to Login': 'Quay lại đăng nhập',
+      'Password reset request failed. Please try again.': 'Yêu cầu đặt lại mật khẩu thất bại. Vui lòng thử lại.',
       // Strings for AccountMainScreen
       'Personal Information': 'Thông tin cá nhân',
       'Change Language': 'Thay đổi ngôn ngữ',
@@ -138,6 +208,9 @@ const resources = {
       'Liên hệ với chúng tôi': 'Liên hệ với chúng tôi',
       'Chính sách bảo mật': 'Chính sách bảo mật',
       'Nguồn Thông Tin Sức Khỏe': 'Nguồn Thông Tin Sức Khỏe',
+      'Logout': 'Đăng xuất',
+      'Are you sure you want to logout?': 'Bạn có chắc chắn muốn đăng xuất?',
+      'User': 'Người dùng',
       // Strings for ChangePasswordScreen
       'Current Password': 'Mật khẩu hiện tại',
       'New Password': 'Mật khẩu mới',
@@ -167,11 +240,6 @@ const resources = {
       'Email is required': 'Yêu cầu nhập email',
       'Profile updated successfully': 'Cập nhật thông tin thành công',
       // Strings for ScanScreen
-      'Camera View': 'Màn hình Camera',
-      'Position your face within the frame': 'Đặt khuôn mặt bạn trong khung',
-      'Flash': 'Đèn Flash',
-      'ON': 'BẬT',
-      'OFF': 'TẮT',
       'Scanning...': 'Đang quét...',
       'Scan Face': 'Quét khuôn mặt',
       'Analyzing face...': 'Đang phân tích khuôn mặt...',
@@ -194,7 +262,6 @@ const resources = {
       'Scan Now': 'Quét ngay',
       'Your health data is now available.': 'Dữ liệu sức khỏe của bạn đã có sẵn.',
       'You have no health scan data yet. Please scan to get health data.': 'Bạn chưa có dữ liệu sức khỏe quét nào. Vui lòng quét để có dữ liệu sức khỏe.',
-      // Thêm các chuỗi khác tại đây
     },
   },
 };
@@ -203,11 +270,12 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'vi', // Ngôn ngữ mặc định
+    lng: 'vi', 
     fallbackLng: 'en',
     interpolation: {
-      escapeValue: false, // React đã tự động xử lý XSS
+      escapeValue: false,
     },
+    compatibilityJSON: 'v3', // Thêm dòng này để tương thích với các nền tảng không hỗ trợ Intl API
   });
 
 export default i18n;
