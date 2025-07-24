@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
 import { useAppSelector } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
 import { updateUserProfile } from '../../redux/slices/userSlice';
@@ -25,6 +26,7 @@ const PersonalInfoScreen: React.FC = () => {
   const dispatch = useDispatch();
   const { t } = useTranslation();
   const { user, updateUser } = useAuth();
+  const navigation = useNavigation();
   const userProfile = useAppSelector((state: RootState) => state.user.profile);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,6 +38,9 @@ const PersonalInfoScreen: React.FC = () => {
     weight: 'lbs',
     height: 'ft',
   });
+  
+  // Trạng thái cho phép chỉnh sửa
+  const [isEditing, setIsEditing] = useState(false);
   
   // Modal states
   const [modalVisible, setModalVisible] = useState(false);
@@ -108,6 +113,8 @@ const PersonalInfoScreen: React.FC = () => {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Tắt chế độ chỉnh sửa sau khi lưu thành công
+      setIsEditing(false);
       showModal(t('Success'), t('Profile updated successfully'), 'success');
     } catch (error) {
       showModal(t('Error'), t('Failed to update profile. Please try again.'), 'error');
@@ -130,58 +137,77 @@ const PersonalInfoScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
-      <StatusBar backgroundColor="#2196F3" barStyle="light-content" />
-      <ScrollView>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
+      <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
             <Icon name="chevron-left" size={24} color="#000" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('Tài khoản')}</Text>
-          <TouchableOpacity style={styles.editButton}>
-            <Icon name="edit-2" size={20} color="#000" />
+          <TouchableOpacity 
+            style={[styles.editButton, isEditing && styles.editButtonActive]} 
+            onPress={() => setIsEditing(!isEditing)}
+          >
+            <Icon name={isEditing ? "check" : "edit-2"} size={20} color={isEditing ? "#2196F3" : "#000"} />
           </TouchableOpacity>
         </View>
+      {/* <StatusBar backgroundColor="#2196F3" barStyle="light-content" /> */}
+      <ScrollView>
+        
         
         <View style={styles.form}>
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>{t('Tên người dùng')}:</Text>
             <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                value={formData.name}
-                onChangeText={(value) => handleInputChange('name', value)}
-                placeholder={t('Nhập tên của bạn')}
-                placeholderTextColor="#999"
-              />
+              {isEditing ? (
+                <TextInput
+                  style={styles.input}
+                  value={formData.name}
+                  onChangeText={(value) => handleInputChange('name', value)}
+                  placeholder={t('Nhập tên của bạn')}
+                  placeholderTextColor="#999"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{formData.name}</Text>
+              )}
             </View>
           </View>
           
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>{t('Số điện thoại')}:</Text>
             <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                value={formData.phone}
-                onChangeText={(value) => handleInputChange('phone', value)}
-                placeholder={t('Nhập số điện thoại')}
-                placeholderTextColor="#999"
-                keyboardType="phone-pad"
-              />
+              {isEditing ? (
+                <TextInput
+                  style={styles.input}
+                  value={formData.phone}
+                  onChangeText={(value) => handleInputChange('phone', value)}
+                  placeholder={t('Nhập số điện thoại')}
+                  placeholderTextColor="#999"
+                  keyboardType="phone-pad"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{formData.phone || '-'}</Text>
+              )}
             </View>
           </View>
           
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>{t('Email')}:</Text>
             <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                value={formData.email}
-                onChangeText={(value) => handleInputChange('email', value)}
-                placeholder={t('Nhập email')}
-                placeholderTextColor="#999"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+              {isEditing ? (
+                <TextInput
+                  style={styles.input}
+                  value={formData.email}
+                  onChangeText={(value) => handleInputChange('email', value)}
+                  placeholder={t('Nhập email')}
+                  placeholderTextColor="#999"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{formData.email}</Text>
+              )}
             </View>
           </View>
           
@@ -192,7 +218,9 @@ const PersonalInfoScreen: React.FC = () => {
           
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('Giới tính')}</Text>
-            <Text style={styles.sectionDescription}>{t('Giới tính chỉ được chọn một lần duy nhất. Bạn không thể thay đổi giới tính của mình sau khi đã chọn.')}</Text>
+            {isEditing && (
+              <Text style={styles.sectionDescription}>{t('Giới tính chỉ được chọn một lần duy nhất. Bạn không thể thay đổi giới tính của mình sau khi đã chọn.')}</Text>
+            )}
             
             <View style={styles.genderSelectionContainer}>
               <TouchableOpacity 
@@ -200,7 +228,8 @@ const PersonalInfoScreen: React.FC = () => {
                   styles.genderOption, 
                   formData.gender === 'male' ? styles.genderOptionSelected : {}
                 ]}
-                onPress={() => selectGender('male')}
+                onPress={() => isEditing && selectGender('male')}
+                disabled={!isEditing}
               >
                 <Image 
                   source={require('../../assets/images/gender-male.png')} 
@@ -215,7 +244,8 @@ const PersonalInfoScreen: React.FC = () => {
                   styles.genderOption, 
                   formData.gender === 'female' ? styles.genderOptionSelected : {}
                 ]}
-                onPress={() => selectGender('female')}
+                onPress={() => isEditing && selectGender('female')}
+                disabled={!isEditing}
               >
                 <Image 
                   source={require('../../assets/images/gender-female.png')} 
@@ -230,12 +260,16 @@ const PersonalInfoScreen: React.FC = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('Độ tuổi')}</Text>
             <View style={styles.valueWithUnitContainer}>
-              <TextInput
-                style={styles.valueInput}
-                value={formData.age}
-                onChangeText={(value) => handleInputChange('age', value)}
-                keyboardType="numeric"
-              />
+              {isEditing ? (
+                <TextInput
+                  style={styles.valueInput}
+                  value={formData.age}
+                  onChangeText={(value) => handleInputChange('age', value)}
+                  keyboardType="numeric"
+                />
+              ) : (
+                <Text style={[styles.valueInput, styles.readOnlyValue]}>{formData.age}</Text>
+              )}
               <Text style={styles.unitText}>y</Text>
             </View>
           </View>
@@ -243,12 +277,16 @@ const PersonalInfoScreen: React.FC = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('Cân nặng')}</Text>
             <View style={styles.valueWithUnitContainer}>
-              <TextInput
-                style={styles.valueInput}
-                value={formData.weight}
-                onChangeText={(value) => handleInputChange('weight', value)}
-                keyboardType="numeric"
-              />
+              {isEditing ? (
+                <TextInput
+                  style={styles.valueInput}
+                  value={formData.weight}
+                  onChangeText={(value) => handleInputChange('weight', value)}
+                  keyboardType="numeric"
+                />
+              ) : (
+                <Text style={[styles.valueInput, styles.readOnlyValue]}>{formData.weight}</Text>
+              )}
               <Text style={styles.unitText}>lbs</Text>
             </View>
           </View>
@@ -256,31 +294,36 @@ const PersonalInfoScreen: React.FC = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('Chiều cao')}</Text>
             <View style={styles.valueWithUnitContainer}>
-              <TextInput
-                style={styles.valueInput}
-                value={formData.height}
-                onChangeText={(value) => handleInputChange('height', value)}
-                keyboardType="numeric"
-              />
+              {isEditing ? (
+                <TextInput
+                  style={styles.valueInput}
+                  value={formData.height}
+                  onChangeText={(value) => handleInputChange('height', value)}
+                  keyboardType="numeric"
+                />
+              ) : (
+                <Text style={[styles.valueInput, styles.readOnlyValue]}>{formData.height}</Text>
+              )}
               <Text style={styles.unitText}>ft</Text>
             </View>
           </View>
           
-          <TouchableOpacity 
-            style={styles.saveButton} 
-            onPress={handleSave}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-              <Text style={styles.saveButtonText}>{t('Nâng cấp')}</Text>
-              <Icon name="arrow-up" size={18} color="#fff" style={{marginLeft: 5}} />
-            </View>
-           
-            )}
-          </TouchableOpacity>
+          {isEditing && (
+            <TouchableOpacity 
+              style={styles.saveButton} 
+              onPress={handleSave}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <Text style={styles.saveButtonText}>{t('Nâng cấp')}</Text>
+                  <Icon name="arrow-up" size={18} color="#fff" style={{marginLeft: 5}} />
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
       
@@ -324,6 +367,10 @@ const styles = StyleSheet.create({
     padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  editButtonActive: {
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+    borderRadius: 20,
   },
   form: {
     backgroundColor: '#f5f5f5',
@@ -429,6 +476,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     width: 50,
     textAlign: 'right',
+  },
+  readOnlyValue: {
+    borderBottomWidth: 0,
+    padding: 0,
+    color: '#000',
   },
   saveButton: {
     backgroundColor: '#2196F3',
