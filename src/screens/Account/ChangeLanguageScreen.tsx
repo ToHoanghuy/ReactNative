@@ -8,15 +8,18 @@ import {
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import { useAppSelector } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
 import { changeLanguage } from '../../redux/slices/userSlice';
 import i18n from '../../i18n';
+const Icon = require('react-native-vector-icons/Feather').default;
 
 const ChangeLanguageScreen: React.FC = () => {
   const dispatch = useDispatch();
+  const navigation = useNavigation();
   const { t } = useTranslation();
-  const currentLanguage = useAppSelector((state: RootState) => state.user.profile?.language || 'en');
+  const currentLanguage = useAppSelector((state: RootState) => state.user.profile?.language || 'vi');
   const [selectedLanguage, setSelectedLanguage] = useState(currentLanguage);
 
   const languages = [
@@ -38,12 +41,36 @@ const ChangeLanguageScreen: React.FC = () => {
   const handleSave = () => {
     dispatch(changeLanguage(selectedLanguage));
     i18n.changeLanguage(selectedLanguage);
-    Alert.alert('Success', t('Language changed successfully'));
+    Alert.alert(
+      'Success', 
+      t('Language changed successfully'),
+      [
+        {
+          text: 'OK',
+          onPress: () => {
+            // Quay về màn hình trước đó
+            navigation.goBack();
+          }
+        }
+      ]
+    );
+  };
+
+  const handleBack = () => {
+    navigation.goBack();
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('Select Language')}</Text>
+      {/* Header với nút back */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <Icon name="arrow-left" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.title}>{t('Select Language')}</Text>
+        <View style={styles.placeholder} />
+      </View>
+
       <View style={styles.languageList}>
         {languages.map((language) => (
           <TouchableOpacity
@@ -83,12 +110,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     padding: 16,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  backButton: {
+    padding: 8,
+  },
+  placeholder: {
+    width: 40, // Để cân bằng với nút back
+  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 24,
-    textAlign: 'center',
   },
   languageList: {
     backgroundColor: 'white',

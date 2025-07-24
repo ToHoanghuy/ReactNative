@@ -12,6 +12,12 @@ export interface HistoryItem {
   breathingRateUnit?: string;
   heartRate?: number;
   heartRateUnit?: string;
+  bloodPressure?: string;
+  bloodPressureUnit?: string;
+  oxygenSaturation?: number;
+  oxygenSaturationUnit?: string;
+  stress?: number;
+  stressUnit?: string;
   stressLevel?: number;
   stressCategory?: string;
   heartRateVariability?: number;

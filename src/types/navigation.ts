@@ -17,6 +17,24 @@ export type BottomTabParamList = {
   Account: undefined;
 };
 
+export type ScanStackParamList = {
+  ScanMain: undefined;
+  ResultDetail: {
+    scanResult: {
+      id: string;
+      date: string;
+      faceId: string;
+      result: 'success' | 'failed';
+      confidence: number;
+      wellnessScore?: number;
+      heartRate?: number;
+      breathingRate?: number;
+      bloodPressure?: string;
+      oxygenSaturation?: number;
+    };
+  };
+};
+
 export type HistoryStackParamList = {
   HistoryList: undefined;
   HistoryCalendar: undefined;

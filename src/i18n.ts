@@ -137,6 +137,18 @@ const resources = {
       'You have no health scan data yet. Please scan to get health data.': 'You have no health scan data yet. Please scan to get health data.',
       'Please enter a valid email address': 'Please enter a valid email address',
       'Email not found in our system': 'Email not found in our system',
+      // Strings for ResultDetailScreen
+      'Scan Results': 'Scan Results',
+      'Scan Successful': 'Scan Successful',
+      'Scan Failed': 'Scan Failed',
+      'Wellness Score': 'Wellness Score',
+      'Excellent': 'Excellent',
+      'Good': 'Good',
+      'Needs Attention': 'Needs Attention',
+      'Health Metrics': 'Health Metrics',
+      'Breathing Rate': 'Breathing Rate',
+      'Scan Again': 'Scan Again',
+      'View History': 'View History',
       // Strings for OTPVerificationScreen
       'OTP Verification': 'OTP Verification',
       'Enter the 6-digit code sent to': 'Enter the 6-digit code sent to',
@@ -144,6 +156,9 @@ const resources = {
       'Resend code in {{time}}s': 'Resend code in {{time}}s',
       'Resend': 'Resend',
       'Verify': 'Verify',
+      // Strings for ResultDetailScreen
+      'Delete Result': 'Delete Result',
+      'Are you sure you want to delete this scan result?': 'Are you sure you want to delete this scan result?',
     },
   },
   vi: {
@@ -276,6 +291,18 @@ const resources = {
       'Scan Now': 'Quét ngay',
       'Your health data is now available.': 'Dữ liệu sức khỏe của bạn đã có sẵn.',
       'You have no health scan data yet. Please scan to get health data.': 'Bạn chưa có dữ liệu sức khỏe quét nào. Vui lòng quét để có dữ liệu sức khỏe.',
+      // Strings for ResultDetailScreen
+      'Scan Results': 'Kết quả quét',
+      'Scan Successful': 'Quét thành công',
+      'Scan Failed': 'Quét thất bại',
+      'Wellness Score': 'Điểm sức khỏe',
+      'Excellent': 'Xuất sắc',
+      'Good': 'Tốt',
+      'Needs Attention': 'Cần chú ý',
+      'Health Metrics': 'Chỉ số sức khỏe',
+      'Breathing Rate': 'Nhịp thở',
+      'Scan Again': 'Quét lại',
+      'View History': 'Xem lịch sử',
       'Please enter a valid email address': 'Vui lòng nhập địa chỉ email hợp lệ',
       'Email not found in our system': 'Email không được tìm thấy trong hệ thống',
       // Strings for OTPVerificationScreen
@@ -285,6 +312,9 @@ const resources = {
       'Resend code in {{time}}s': 'Gửi lại mã sau {{time}} giây',
       'Resend': 'Gửi lại',
       'Verify': 'Xác thực',
+      // Strings for ResultDetailScreen
+      'Delete Result': 'Xóa kết quả',
+      'Are you sure you want to delete this scan result?': 'Bạn có chắc chắn muốn xóa kết quả quét này?',
     },
   },
 };

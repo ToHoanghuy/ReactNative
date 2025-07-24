@@ -6,6 +6,7 @@ import { RootStackParamList } from '../types/navigation';
 import { login } from '../redux/slices/authSlice';
 import AuthNavigator from './AuthNavigator';
 import BottomTabNavigator from './BottomTabNavigator';
+import ResultDetailScreen from '../screens/Scan/ResultDetailScreen';
 import { getAuthData } from '../utils/storage';
 import SplashScreen from '../components/SplashScreen';
 import { AppState, Platform } from 'react-native';
@@ -67,7 +68,10 @@ const RootNavigator: React.FC = () => {
   return (
     <Stack.Navigator key={reloadKey} screenOptions={{ headerShown: false }}>
       {isLoggedIn ? (
-        <Stack.Screen name="Main" component={BottomTabNavigator} />
+        <>
+          <Stack.Screen name="Main" component={BottomTabNavigator} />
+          {/* <Stack.Screen name="ResultDetail" component={ResultDetailScreen} /> */}
+        </>
       ) : (
         <Stack.Screen name="Auth" component={AuthNavigator} />
       )}

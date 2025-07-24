@@ -13,7 +13,7 @@ import Animated, {
   runOnJS
 } from 'react-native-reanimated';
 const Icon = require('react-native-vector-icons/Feather').default;
-import { BottomTabParamList, HistoryStackParamList, AccountStackParamList } from '../types/navigation';
+import { BottomTabParamList, HistoryStackParamList, AccountStackParamList, ScanStackParamList } from '../types/navigation';
 import { Dimensions } from 'react-native';
 
 // Import screens
@@ -21,6 +21,7 @@ import HistoryListScreen from '../screens/History/HistoryListScreen';
 import HistoryCalendarScreen from '../screens/History/HistoryCalendarScreen';
 import HistoryChartScreen from '../screens/History/HistoryChartScreen';
 import ScanScreen from '../screens/Scan/ScanScreen';
+import ResultDetailScreen from '../screens/Scan/ResultDetailScreen';
 import AccountMainScreen from '../screens/Account/AccountMainScreen';
 import PersonalInfoScreen from '../screens/Account/PersonalInfoScreen';
 import ChangeLanguageScreen from '../screens/Account/ChangeLanguageScreen';
@@ -29,6 +30,7 @@ import ChangePasswordScreen from '../screens/Account/ChangePasswordScreen';
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 const HistoryStack = createStackNavigator<HistoryStackParamList>();
 const AccountStack = createStackNavigator<AccountStackParamList>();
+const ScanStack = createStackNavigator<ScanStackParamList>();
 const { width, height } = Dimensions.get('window');
 function HistoryStackNavigator() {
   return (
@@ -49,6 +51,23 @@ function HistoryStackNavigator() {
         options={{ title: 'Chart Report' }}
       />
     </HistoryStack.Navigator>
+  );
+}
+
+function ScanStackNavigator() {
+  return (
+    <ScanStack.Navigator screenOptions={{ headerShown: false }}>
+      <ScanStack.Screen
+        name="ScanMain"
+        component={ScanScreen}
+        options={{ title: 'Scan' }}
+      />
+      <ScanStack.Screen
+        name="ResultDetail"
+        component={ResultDetailScreen}
+        options={{ title: 'Result Detail' }}
+      />
+    </ScanStack.Navigator>
   );
 }
 
@@ -184,7 +203,7 @@ export default function BottomTabNavigator() {
         headerShown: false,
       }}>
       <Tab.Screen name="History" component={HistoryStackNavigator} />
-      <Tab.Screen name="Scan" component={ScanScreen} />
+      <Tab.Screen name="Scan" component={ScanStackNavigator} />
       <Tab.Screen name="Account" component={AccountStackNavigator} />
     </Tab.Navigator>
   );

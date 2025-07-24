@@ -15,7 +15,12 @@ interface UserState {
 }
 
 const initialState: UserState = {
-  profile: null,
+  profile: {
+    id: '',
+    name: '',
+    email: '',
+    language: 'vi' as 'en' | 'vi',
+  },
   isLoading: false,
 };
 
@@ -37,6 +42,14 @@ const userSlice = createSlice({
     changeLanguage: (state, action: PayloadAction<'en' | 'vi'>) => {
       if (state.profile) {
         state.profile.language = action.payload;
+      } else {
+        // Nếu profile chưa có, tạo profile mặc định với ngôn ngữ được chọn
+        state.profile = {
+          id: '',
+          name: '',
+          email: '',
+          language: action.payload,
+        };
       }
     },
     clearUserProfile: (state) => {

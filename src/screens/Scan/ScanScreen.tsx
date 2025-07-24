@@ -12,7 +12,10 @@ import {
   Dimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { Camera, useCameraDevices } from 'react-native-vision-camera';
+import { ScanStackParamList } from '../../types/navigation';
 const Icon = require('react-native-vector-icons/Feather').default;
 import Animated, { 
   useSharedValue, 
@@ -27,9 +30,15 @@ import Animated, {
 import { useEffect, useRef } from 'react';
 import Modal from '../../components/Modal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch } from 'react-redux';
+import { clearHistory } from '../../redux/slices/historySlice';
+
+type NavigationProp = StackNavigationProp<ScanStackParamList, 'ScanMain'>;
 
 const ScanScreen: React.FC = () => {
   const { t } = useTranslation();
+  const navigation = useNavigation<NavigationProp>();
+  const dispatch = useDispatch();
   const [isScanning, setIsScanning] = useState(false);
   const [hasHealthData, setHasHealthData] = useState(false);
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'not-determined' | 'restricted'>('not-determined');
@@ -122,6 +131,9 @@ const ScanScreen: React.FC = () => {
   
   // Khởi tạo giá trị shared values bên ngoài useEffect để tránh thiết lập trong quá trình render
   useEffect(() => {
+    // Clear history state on component mount to start fresh
+    // dispatch(clearHistory());
+    
     // Check for camera permissions
     checkCameraPermission();
     
@@ -161,7 +173,7 @@ const ScanScreen: React.FC = () => {
         timerRef.current = null;
       }
     };
-  }, [scale]);
+  }, [scale, dispatch]);
   
   // Check camera permission
   const checkCameraPermission = async () => {
@@ -213,7 +225,7 @@ const ScanScreen: React.FC = () => {
   const startFaceScan = () => {
     // Đánh dấu trạng thái đang quét
     setIsScanning(true);
-    setTimeRemaining(60);
+    setTimeRemaining(6);
     
     // Xóa timer cũ nếu có
     if (timerRef.current) {
@@ -326,35 +338,34 @@ const ScanScreen: React.FC = () => {
       // Simulate processing time
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Simulate face scanning result
+      // Generate unique ID using timestamp + random string
+      const generateUniqueId = () => {
+        const timestamp = Date.now();
+        const randomPart = Math.random().toString(36).substr(2, 9);
+        return `${timestamp}_${randomPart}`;
+      };
+      
+      // Simulate face scanning result with more detailed health data
       const mockResult = {
-        id: Date.now().toString(),
+        id: generateUniqueId(),
         date: new Date().toISOString(),
         faceId: `FACE_${Math.random().toString(36).substr(2, 9)}`,
-        result: Math.random() > 0.3 ? 'success' : 'failed',
+        result: Math.random() > 0.3 ? 'success' : 'failed' as 'success' | 'failed',
         confidence: Math.random() * 0.4 + 0.6, // 0.6 to 1.0
+        wellnessScore: Math.floor(Math.random() * 3) + 7, // 7-10
+        heartRate: Math.floor(Math.random() * 30) + 60, // 60-90
+        breathingRate: Math.floor(Math.random() * 6) + 12, // 12-18
+        bloodPressure: `${Math.floor(Math.random() * 20) + 110}/${Math.floor(Math.random() * 15) + 70}`,
+        oxygenSaturation: Math.floor(Math.random() * 5) + 95, // 95-100
       };
 
       setIsScanning(false);
       
-      // Hiệu ứng hoàn thành quét
-      if (mockResult.result === 'success') {
-        // Tạo hiệu ứng thành công an toàn với setTimeout
-        setTimeout(() => {
-          flashOpacity.value = withSequence(
-            withTiming(0.5, { duration: 200 }),
-            withTiming(0, { duration: 500 })
-          );
-        }, 0);
-        
-        // Đặt dữ liệu sức khỏe và hiển thị thông báo
-        setHasHealthData(true);
-        setTimeout(() => {
-          Alert.alert(t('Success'), `${t('Face recognized with')} ${(mockResult.confidence * 100).toFixed(1)}% ${t('confidence')}`);
-        }, 500);
-      } else {
-        Alert.alert(t('Failed'), t('Face recognition failed. Please try again.'));
-      }
+      // Điều hướng đến ResultDetailScreen thay vì hiển thị Alert
+      navigation.navigate('ResultDetail', {
+        scanResult: mockResult
+      });
+      
     } catch (error) {
       console.error('Error completing scan:', error);
       setIsScanning(false);
