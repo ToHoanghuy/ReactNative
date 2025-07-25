@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { saveHistoryData } from '../../utils/storage';
 
 export interface HistoryItem {
   id: string;
@@ -45,6 +46,8 @@ const historySlice = createSlice({
     },
     setHistoryItems: (state, action: PayloadAction<HistoryItem[]>) => {
       state.items = action.payload;
+      // Persist to AsyncStorage
+      saveHistoryData(state.items);
     },
     addHistoryItem: (state, action: PayloadAction<HistoryItem>) => {
       // Kiểm tra xem item đã tồn tại chưa dựa trên ID
@@ -52,14 +55,15 @@ const historySlice = createSlice({
       if (existingIndex === -1) {
         // Chỉ thêm nếu chưa tồn tại
         state.items.unshift(action.payload);
+        // Persist to AsyncStorage
+        saveHistoryData(state.items);
       }
     },
     setFilterDate: (state, action: PayloadAction<string | null>) => {
       state.filterDate = action.payload;
     },
-    clearHistory: (state) => {
-      state.items = [];
-    },
+
+
   },
 });
 
@@ -68,6 +72,5 @@ export const {
   setHistoryItems,
   addHistoryItem,
   setFilterDate,
-  clearHistory,
 } = historySlice.actions;
 export default historySlice.reducer;

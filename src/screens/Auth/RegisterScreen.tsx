@@ -23,6 +23,7 @@ import { RootState } from '../../redux/store';
 import { addAccount } from '../../redux/slices/accountsSlice';
 import { usePersistentForm } from '../../components/PersistentFormManager';
 import Modal from '../../components/Modal';
+import SplashScreen from '../../components/SplashScreen';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, 'Register'>;
@@ -418,6 +419,9 @@ const RegisterScreen: React.FC = () => {
         buttons={modalButtons}
         onClose={() => setModalVisible(false)}
       />
+      
+      {/* SplashScreen overlay when loading */}
+      <SplashScreen isLoading={isLoading} />
     </KeyboardAvoidingView>
   );
   

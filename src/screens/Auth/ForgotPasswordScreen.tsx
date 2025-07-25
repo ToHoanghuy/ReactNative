@@ -20,6 +20,7 @@ import { AuthStackParamList } from '../../types/navigation';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import Modal from '../../components/Modal';
+import SplashScreen from '../../components/SplashScreen';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
@@ -189,6 +190,9 @@ const ForgotPasswordScreen: React.FC = () => {
         buttons={modalButtons}
         onClose={() => setModalVisible(false)}
       />
+      
+      {/* SplashScreen overlay when loading */}
+      <SplashScreen isLoading={isLoading} />
     </SafeAreaView>
   );
 };

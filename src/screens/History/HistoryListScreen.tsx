@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../hooks/redux';
@@ -14,6 +15,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootState } from '../../redux/store';
 import { HistoryItem } from '../../redux/slices/historySlice';
 import { HistoryStackParamList } from '../../types/navigation';
+import SplashScreen from '../../components/SplashScreen';
 // import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
 
@@ -30,6 +32,60 @@ const HistoryListScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
   const { items, isLoading } = useAppSelector((state: RootState) => state.history);
+  
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasReachedEnd, setHasReachedEnd] = useState(false);
+  
+  const ITEMS_PER_PAGE = 10;
+  
+  // Calculate displayed items based on current page
+  const displayedItems = useMemo(() => {
+    const endIndex = page * ITEMS_PER_PAGE;
+    const currentItems = items.slice(0, endIndex);
+    
+    // Check if we've reached the end
+    if (currentItems.length >= items.length) {
+      setHasReachedEnd(true);
+    } else {
+      setHasReachedEnd(false);
+    }
+    
+    return currentItems;
+  }, [items, page]);
+
+  // Load more items when reaching the end
+  const handleLoadMore = useCallback(() => {
+    if (!loadingMore && !hasReachedEnd && displayedItems.length < items.length) {
+      setLoadingMore(true);
+      
+      // Simulate loading delay for better UX
+      setTimeout(() => {
+        setPage(prevPage => prevPage + 1);
+        setLoadingMore(false);
+      }, 500);
+    }
+  }, [loadingMore, hasReachedEnd, displayedItems.length, items.length]);
+
+  // Reset pagination when data changes
+  const handleRefresh = useCallback(() => {
+    setPage(1);
+    setHasReachedEnd(false);
+    setLoadingMore(false);
+  }, []);
+
+  // Footer component for loading indicator
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color="#007AFF" />
+        <Text style={styles.loadingText}>{t('Loading more...')}</Text>
+      </View>
+    );
+  };
 
   const renderHistoryItem = ({ item }: { item: HistoryItem }) => (
     <View style={[styles.historyItem, { borderLeftColor: getScoreColor(item.wellnessScore || 8) }]}>
@@ -118,15 +174,40 @@ const HistoryListScreen: React.FC = () => {
       </View>
 
       <FlatList
-        data={items}
+        data={displayedItems}
         renderItem={renderHistoryItem}
         keyExtractor={(item) => item.id}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={() => {}} />
+          <RefreshControl 
+            refreshing={isLoading} 
+            onRefresh={handleRefresh} 
+          />
         }
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Text style={{ color: '#888', fontSize: 16 }}>{t('No history items found')}</Text>
+          </View>
+        }
+        // Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        updateCellsBatchingPeriod={30}
+        initialNumToRender={10}
+        windowSize={10}
+        getItemLayout={(data, index) => ({
+          length: 200, // Approximate item height
+          offset: 200 * index,
+          index,
+        })}
       />
+      
+      {/* SplashScreen overlay */}
+      <SplashScreen isLoading={loadingMore} />
     </View>
   );
 };
@@ -282,6 +363,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     textTransform: 'uppercase',
+  },
+  footerLoader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  loadingText: {
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
   },
 });
 

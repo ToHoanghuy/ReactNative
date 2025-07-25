@@ -33,6 +33,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useEffect, useRef } from 'react';
 import Modal from '../../components/Modal';
+import SplashScreen from '../../components/SplashScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProp = StackNavigationProp<ScanStackParamList, 'ScanMain'>;
@@ -49,6 +50,7 @@ const ScanScreen: React.FC = () => {
   const [showScanningTips, setShowScanningTips] = useState(false);
   const [hasScanningTipsBeenShown, setHasScanningTipsBeenShown] = useState(false);
   const [isFrontCamera, setIsFrontCamera] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const cameraRef = useRef<Camera>(null);
   // Tham chiếu đến timer để có thể hủy khi cần
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -320,6 +322,9 @@ const ScanScreen: React.FC = () => {
   // Complete the scanning process
   const completeScan = async () => {
     try {
+      // Set loading state
+      setIsLoading(true);
+      
       // Clear the timer if it exists
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -339,7 +344,7 @@ const ScanScreen: React.FC = () => {
       setShowCamera(false);
       
       // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Generate unique ID using nanoid
       const _id = nanoid();
@@ -359,6 +364,7 @@ const ScanScreen: React.FC = () => {
       };
 
       setIsScanning(false);
+      setIsLoading(false);
       
       // Điều hướng đến ResultDetailScreen thay vì hiển thị Alert
       navigation.navigate('ResultDetail', {
@@ -368,6 +374,7 @@ const ScanScreen: React.FC = () => {
     } catch (error) {
       console.error('Error completing scan:', error);
       setIsScanning(false);
+      setIsLoading(false);
       setShowCamera(false);
       Alert.alert(t('Error'), t('An error occurred during scanning. Please try again.'));
     }
@@ -721,14 +728,14 @@ const ScanScreen: React.FC = () => {
         </View>
       )}
       
-      {(isScanning && (!showCamera || !activeDevice)) && (
+      {/* {(isScanning && (!showCamera || !activeDevice)) && (
         <View style={styles.scanningOverlay}>
           <View style={styles.scanningAnimation}>
             <ActivityIndicator size="large" color="white" />
             <Text style={styles.scanningText}>{t('Preparing camera...')}</Text>
           </View>
         </View>
-      )}
+      )} */}
       
       {/* Bottom Section - Message (only shown when not scanning) */}
       {!showCamera && (
@@ -765,6 +772,8 @@ const ScanScreen: React.FC = () => {
         ]}
       />
       
+      {/* SplashScreen overlay */}
+      <SplashScreen isLoading={isLoading} />
     </SafeAreaView>
   );
 };

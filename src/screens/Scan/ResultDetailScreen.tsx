@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -15,6 +15,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useDispatch } from 'react-redux';
 import { ScanStackParamList } from '../../types/navigation';
 import { addHistoryItem } from '../../redux/slices/historySlice';
+import SplashScreen from '../../components/SplashScreen';
 import Svg, { Circle } from 'react-native-svg';
 const Icon = require('react-native-vector-icons/Feather').default;
 const MaterialIcons = require('react-native-vector-icons/MaterialIcons').default;
@@ -33,6 +34,7 @@ const ResultDetailScreen: React.FC<Props> = () => {
     const dispatch = useDispatch();
     const route = useRoute<any>();
     const { scanResult } = route.params || {};
+    const [isLoading, setIsLoading] = useState(false);
 
     // Lưu kết quả vào Redux khi component mount - chỉ một lần
     useEffect(() => {
@@ -77,7 +79,11 @@ const ResultDetailScreen: React.FC<Props> = () => {
                 {
                     text: t('Delete'),
                     style: 'destructive',
-                    onPress: () => {
+                    onPress: async () => {
+                        setIsLoading(true);
+                        // Simulate delete processing
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        setIsLoading(false);
                         // TODO: Implement delete functionality
                         navigation.goBack();
                     },
@@ -159,7 +165,6 @@ const ResultDetailScreen: React.FC<Props> = () => {
                                 <MaterialCommunityIcons name="lungs" size={22} color="#0099cc" />
                             </View>
                             <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
-
                         </View>
                         <Text style={styles.metricLabel}>{t('Breathing Rate')}</Text>
                         <Text style={styles.metricValue}>{scanResult.breathingRate || 14}</Text>
@@ -221,6 +226,9 @@ const ResultDetailScreen: React.FC<Props> = () => {
                     <Text style={styles.deleteButtonText}>{t('Delete')}</Text>
                 </TouchableOpacity>
             </ScrollView>
+            
+            {/* SplashScreen overlay */}
+            <SplashScreen isLoading={isLoading} />
         </SafeAreaView>
     );
 };

@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const STORAGE_KEYS = {
   AUTH_TOKEN: '@auth_token',
   USER_INFO: '@user_info',
+  HISTORY_DATA: '@history_data',
 };
 
 // Save auth data
@@ -45,6 +46,44 @@ export const clearAuthData = async () => {
     return true;
   } catch (error) {
     console.error('Error clearing auth data:', error);
+    return false;
+  }
+};
+
+// Save history data
+export const saveHistoryData = async (historyItems: any[]) => {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.HISTORY_DATA, JSON.stringify(historyItems));
+    return true;
+  } catch (error) {
+    console.error('Error saving history data:', error);
+    return false;
+  }
+};
+
+// Get history data
+export const getHistoryData = async () => {
+  try {
+    const historyString = await AsyncStorage.getItem(STORAGE_KEYS.HISTORY_DATA);
+    
+    if (!historyString) {
+      return [];
+    }
+    
+    return JSON.parse(historyString);
+  } catch (error) {
+    console.error('Error getting history data:', error);
+    return [];
+  }
+};
+
+// Clear history data
+export const clearHistoryData = async () => {
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEYS.HISTORY_DATA);
+    return true;
+  } catch (error) {
+    console.error('Error clearing history data:', error);
     return false;
   }
 };

@@ -5,6 +5,10 @@ const resources = {
   en: {
     translation: {
       'Monthly Scan Activity': 'Monthly Scan Activity',
+      'Daily Usage': 'Daily Usage',
+      '7 Days': '7 Days',
+      '30 Days': '30 Days', 
+      '3 Months': '3 Months',
       'Success Rate': 'Success Rate',
       'Result Distribution': 'Result Distribution',
       'Total Scans': 'Total Scans',
@@ -28,6 +32,8 @@ const resources = {
       'Confidence': 'Confidence',
       'success': 'success',
       'failed': 'failed',
+      'Loading more...': 'Loading more...',
+      'No history items found': 'No history items found',
       // Strings for Login Screen
       'Health Monitor': 'Health Monitor',
       'Welcome Back': 'Welcome Back',
@@ -170,11 +176,19 @@ const resources = {
       'View Details': 'View Details',
       '/min': '/min',
       'O2': 'O2',
+      'Scan History Calendar': 'Scan History Calendar',
+      'Scans for': 'Scans for',
+      'No scans found for this date': 'No scans found for this date',
+      'Scan Statistics': 'Scan Statistics',
     },
   },
   vi: {
     translation: {
       'Monthly Scan Activity': 'Hoạt động quét hàng tháng',
+      'Daily Usage': 'Sử dụng hàng ngày',
+      '7 Days': '7 Ngày',
+      '30 Days': '30 Ngày',
+      '3 Months': '3 Tháng',
       'Success Rate': 'Tỉ lệ thành công',
       'Result Distribution': 'Phân bố kết quả',
       'Total Scans': 'Tổng số lần quét',
@@ -198,6 +212,8 @@ const resources = {
       'Confidence': 'Độ tin cậy',
       'success': 'thành công',
       'failed': 'thất bại',
+      'Loading more...': 'Đang tải thêm...',
+      'No history items found': 'Không tìm thấy lịch sử nào',
       // Strings for Login Screen
       'Health Monitor': 'Giám sát Sức khỏe',
       'Welcome Back': 'Chào mừng trở lại',
@@ -336,6 +352,10 @@ const resources = {
       'View Details': 'Xem chi tiết',
       '/min': '/phút',
       'O2': 'O2',
+      'Scan History Calendar': 'Lịch sử quét',
+      'Scans for': 'Các lần quét ngày',
+      'No scans found for this date': 'Không có lần quét nào cho ngày này',
+      'Scan Statistics': 'Thống kê quét',
     },
   },
 };

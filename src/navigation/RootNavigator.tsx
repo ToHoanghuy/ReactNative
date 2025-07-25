@@ -60,22 +60,23 @@ const RootNavigator: React.FC = () => {
     };
   }, [dispatch]);
 
-  if (isLoading) {
-    return <SplashScreen isLoading={isLoading} />;
-  }
-
   // Force a re-render when needed with this key
   return (
-    <Stack.Navigator key={reloadKey} screenOptions={{ headerShown: false }}>
-      {isLoggedIn ? (
-        <>
-          <Stack.Screen name="Main" component={BottomTabNavigator} />
-          {/* <Stack.Screen name="ResultDetail" component={ResultDetailScreen} /> */}
-        </>
-      ) : (
-        <Stack.Screen name="Auth" component={AuthNavigator} />
-      )}
-    </Stack.Navigator>
+    <>
+      <Stack.Navigator key={reloadKey} screenOptions={{ headerShown: false }}>
+        {isLoggedIn ? (
+          <>
+            <Stack.Screen name="Main" component={BottomTabNavigator} />
+            {/* <Stack.Screen name="ResultDetail" component={ResultDetailScreen} /> */}
+          </>
+        ) : (
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+        )}
+      </Stack.Navigator>
+      
+      {/* SplashScreen as overlay when loading */}
+      {isLoading && <SplashScreen isLoading={isLoading} />}
+    </>
   );
 };
 
