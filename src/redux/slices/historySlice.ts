@@ -47,7 +47,12 @@ const historySlice = createSlice({
       state.items = action.payload;
     },
     addHistoryItem: (state, action: PayloadAction<HistoryItem>) => {
-      state.items.unshift(action.payload);
+      // Kiểm tra xem item đã tồn tại chưa dựa trên ID
+      const existingIndex = state.items.findIndex(item => item.id === action.payload.id);
+      if (existingIndex === -1) {
+        // Chỉ thêm nếu chưa tồn tại
+        state.items.unshift(action.payload);
+      }
     },
     setFilterDate: (state, action: PayloadAction<string | null>) => {
       state.filterDate = action.payload;

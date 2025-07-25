@@ -34,29 +34,31 @@ const ResultDetailScreen: React.FC<Props> = () => {
     const route = useRoute<any>();
     const { scanResult } = route.params || {};
 
-    // Lưu kết quả vào Redux khi component mount
+    // Lưu kết quả vào Redux khi component mount - chỉ một lần
     useEffect(() => {
-        const historyItem = {
-            id: scanResult.id,
-            date: scanResult.date,
-            faceId: scanResult.faceId,
-            result: scanResult.result,
-            confidence: scanResult.confidence,
-            wellnessScore: scanResult.wellnessScore || 8,
-            heartRate: scanResult.heartRate || 72,
-            heartRateUnit: 'bpm',
-            breathingRate: scanResult.breathingRate || 16,
-            breathingRateUnit: 'bpm',
-            bloodPressure: scanResult.bloodPressure || '120/80',
-            bloodPressureUnit: 'mmHg',
-            oxygenSaturation: scanResult.oxygenSaturation || 98,
-            oxygenSaturationUnit: '%',
-            stress: Math.floor(Math.random() * 30) + 20, // Mock data
-            stressUnit: '%',
-        };
+        if (scanResult && scanResult.id) {
+            const historyItem = {
+                id: scanResult.id,
+                date: scanResult.date,
+                faceId: scanResult.faceId,
+                result: scanResult.result,
+                confidence: scanResult.confidence,
+                wellnessScore: scanResult.wellnessScore || 8,
+                heartRate: scanResult.heartRate || 72,
+                heartRateUnit: 'bpm',
+                breathingRate: scanResult.breathingRate || 16,
+                breathingRateUnit: 'bpm',
+                bloodPressure: scanResult.bloodPressure || '120/80',
+                bloodPressureUnit: 'mmHg',
+                oxygenSaturation: scanResult.oxygenSaturation || 98,
+                oxygenSaturationUnit: '%',
+                stress: Math.floor(Math.random() * 30) + 20, // Mock data
+                stressUnit: '%',
+            };
 
-        dispatch(addHistoryItem(historyItem));
-    }, [dispatch, scanResult]);
+            dispatch(addHistoryItem(historyItem));
+        }
+    }, []); // Chỉ chạy một lần khi component mount
 
     const handleBackToScan = () => {
         // Quay về màn hình trước đó
@@ -100,7 +102,7 @@ const ResultDetailScreen: React.FC<Props> = () => {
                         cy={60}
                         r={45}
                         stroke="#e0e0e0"
-                        strokeWidth={8}
+                        strokeWidth={12}
                         fill="transparent"
                     />
                     {/* Progress circle */}
@@ -110,7 +112,7 @@ const ResultDetailScreen: React.FC<Props> = () => {
                         cy={60}
                         r={45}
                         stroke="#2196F3"
-                        strokeWidth={8}
+                        strokeWidth={11}
                         fill="transparent"
                         strokeDasharray={strokeDasharray}
                         strokeDashoffset={strokeDashoffset}
@@ -135,7 +137,7 @@ const ResultDetailScreen: React.FC<Props> = () => {
                 <TouchableOpacity style={styles.backButton} onPress={handleBackToScan}>
                     <Icon name="arrow-left" size={24} color="#333" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Result</Text>
+                <Text style={styles.headerTitle}>{t('Scan Results')}</Text>
                 <View style={styles.placeholder} />
             </View>
 
@@ -156,12 +158,12 @@ const ResultDetailScreen: React.FC<Props> = () => {
                             <View style={[styles.metricIcon, { backgroundColor: '#e6f7ff' }]}>
                                 <MaterialCommunityIcons name="lungs" size={22} color="#0099cc" />
                             </View>
-                            <Icon name="info" size={16} color="#2196F3" style={styles.infoIcon} />
+                            <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
 
                         </View>
-                        <Text style={styles.metricLabel}>Breathing Rate</Text>
+                        <Text style={styles.metricLabel}>{t('Breathing Rate')}</Text>
                         <Text style={styles.metricValue}>{scanResult.breathingRate || 14}</Text>
-                        <Text style={styles.metricUnit}>/minutes</Text>
+                        <Text style={styles.metricUnit}>{t('/minutes')}</Text>
                     </View>
 
                     {/* Heart Rate */}
@@ -171,11 +173,11 @@ const ResultDetailScreen: React.FC<Props> = () => {
                                 <MaterialCommunityIcons name="heart-pulse" size={22} color="#ff5c5c" />
                             </View>
                             {/* <MaterialIcons name="favorite" size={24} color="#F44336" /> */}
-                            <Icon name="info" size={16} color="#2196F3" style={styles.infoIcon} />
+                            <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
                         </View>
-                        <Text style={styles.metricLabel}>Heart Rate</Text>
+                        <Text style={styles.metricLabel}>{t('Heart Rate')}</Text>
                         <Text style={styles.metricValue}>{scanResult.heartRate || 52}</Text>
-                        <Text style={styles.metricUnit}>bpm</Text>
+                        <Text style={styles.metricUnit}>{t('bpm')}</Text>
                     </View>
 
                     {/* Stress Level */}
@@ -184,12 +186,12 @@ const ResultDetailScreen: React.FC<Props> = () => {
                             <View style={[styles.metricIcon, { backgroundColor: '#fff2e6' }]}>
                                 <MaterialCommunityIcons name="brain" size={22} color="#ff9933" />
                             </View>
-                            <Icon name="info" size={16} color="#2196F3" style={styles.infoIcon} />
+                            <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
 
                         </View>
-                        <Text style={styles.metricLabel}>Stress level</Text>
+                        <Text style={styles.metricLabel}>{t('Stress Level')}</Text>
                         <Text style={styles.metricValue}>2</Text>
-                        <Text style={styles.metricUnit}>Moderate</Text>
+                        <Text style={styles.metricUnit}>{t('Moderate')}</Text>
                     </View>
 
                     {/* Heart Rate Variability */}
@@ -198,24 +200,25 @@ const ResultDetailScreen: React.FC<Props> = () => {
                             <View style={[styles.metricIcon, { backgroundColor: '#e6ffe6' }]}>
                                 <MaterialCommunityIcons name="chart-line-variant" size={22} color="#33cc33" />
                             </View>
-                            <Icon name="info" size={16} color="#2196F3" style={styles.infoIcon} />
+
+                            <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
 
                         </View>
-                        <Text style={styles.metricLabel}>Heart Rate Variability</Text>
+                        <Text style={styles.metricLabel}>{t('Heart Rate Variability')}</Text>
                         <Text style={styles.metricValue}>42</Text>
-                        <Text style={styles.metricUnit}>Miliseconds</Text>
+                        <Text style={styles.metricUnit}>{t('Milliseconds')}</Text>
                     </View>
                 </View>
 
                 {/* Warning Button */}
                 <TouchableOpacity style={styles.warningButton}>
                     <Icon name="alert-triangle" size={20} color="#FF9800" />
-                    <Text style={styles.warningText}>View abnormal results</Text>
+                    <Text style={styles.warningText}>{t('View abnormal results')}</Text>
                 </TouchableOpacity>
 
                 {/* Delete Button */}
                 <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-                    <Text style={styles.deleteButtonText}>Delete</Text>
+                    <Text style={styles.deleteButtonText}>{t('Delete')}</Text>
                 </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
@@ -326,16 +329,16 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     metricIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         backgroundColor: '#f2f7ff',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
     },
     infoIcon: {
-        opacity: 0.6,
+        opacity: 0.8,
     },
     metricLabel: {
         fontSize: 12,

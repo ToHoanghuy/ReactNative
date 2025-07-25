@@ -18,6 +18,7 @@
     "@reduxjs/toolkit": "^2.8.2",
     "i18next": "^21.6.16",
     "intl-pluralrules": "^2.0.1",
+    "nanoid": "^5.1.5",
     "paths-js": "^0.4.11",
     "react": "18.3.1",
     "react-i18next": "^15.6.0",

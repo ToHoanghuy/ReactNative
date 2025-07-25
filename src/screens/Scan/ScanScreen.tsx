@@ -16,7 +16,11 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Camera, useCameraDevices } from 'react-native-vision-camera';
 import { ScanStackParamList } from '../../types/navigation';
+import { nanoid } from 'nanoid/non-secure';
+import { useAppSelector } from '../../hooks/redux';
+import Svg, { Circle } from 'react-native-svg';
 const Icon = require('react-native-vector-icons/Feather').default;
+const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -30,15 +34,12 @@ import Animated, {
 import { useEffect, useRef } from 'react';
 import Modal from '../../components/Modal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useDispatch } from 'react-redux';
-import { clearHistory } from '../../redux/slices/historySlice';
 
 type NavigationProp = StackNavigationProp<ScanStackParamList, 'ScanMain'>;
 
 const ScanScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
-  const dispatch = useDispatch();
   const [isScanning, setIsScanning] = useState(false);
   const [hasHealthData, setHasHealthData] = useState(false);
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'not-determined' | 'restricted'>('not-determined');
@@ -51,6 +52,11 @@ const ScanScreen: React.FC = () => {
   const cameraRef = useRef<Camera>(null);
   // Tham chiếu đến timer để có thể hủy khi cần
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Get the latest scan result from Redux
+  const latestScanResult = useAppSelector(state => 
+    state.history.items.length > 0 ? state.history.items[0] : null
+  );
   
   // Get available camera devices
   const devices = useCameraDevices();
@@ -131,9 +137,6 @@ const ScanScreen: React.FC = () => {
   
   // Khởi tạo giá trị shared values bên ngoài useEffect để tránh thiết lập trong quá trình render
   useEffect(() => {
-    // Clear history state on component mount to start fresh
-    // dispatch(clearHistory());
-    
     // Check for camera permissions
     checkCameraPermission();
     
@@ -173,7 +176,7 @@ const ScanScreen: React.FC = () => {
         timerRef.current = null;
       }
     };
-  }, [scale, dispatch]);
+  }, [scale]);
   
   // Check camera permission
   const checkCameraPermission = async () => {
@@ -338,16 +341,12 @@ const ScanScreen: React.FC = () => {
       // Simulate processing time
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Generate unique ID using timestamp + random string
-      const generateUniqueId = () => {
-        const timestamp = Date.now();
-        const randomPart = Math.random().toString(36).substr(2, 9);
-        return `${timestamp}_${randomPart}`;
-      };
+      // Generate unique ID using nanoid
+      const _id = nanoid();
       
       // Simulate face scanning result with more detailed health data
       const mockResult = {
-        id: generateUniqueId(),
+        id: _id,
         date: new Date().toISOString(),
         faceId: `FACE_${Math.random().toString(36).substr(2, 9)}`,
         result: Math.random() > 0.3 ? 'success' : 'failed' as 'success' | 'failed',
@@ -411,6 +410,72 @@ const ScanScreen: React.FC = () => {
       opacity: opacity.value
     };
   });
+
+  // Component hiển thị kết quả scan cuối cùng
+  const LastScanResult = ({ scanResult }: { scanResult: any }) => {
+
+    return (
+      <View style={styles.resultCardContainer}>
+        <Text style={styles.resultCardTitle}>{t('Last taken:')} {new Date(scanResult.date).toLocaleDateString()} {new Date(scanResult.date).toLocaleTimeString()}</Text>
+        
+        <View style={styles.metricsContainer}>
+          {/* Row 1 */}
+          <View style={styles.metricsRow}>
+            <View style={styles.metricBox}>
+              <View style={styles.BreathingRateIcon}>
+                <MaterialCommunityIcons name="lungs" size={24} color="#0099cc" />
+              </View>
+              <View style={styles.infoIcon}>
+                <Icon name="info" size={16} color="#2196F3" />
+              </View>
+              <Text style={styles.metricLabel}> {t('Breathing Rate')}</Text>
+              <Text style={styles.metricValue}>{scanResult.breathingRate || 14}</Text>
+              <Text style={styles.metricUnit}>{t('Minutes')}</Text>
+            </View>
+            
+            <View style={styles.metricBox}>
+              <View style={styles.heartRateIcon}>
+                <MaterialCommunityIcons name="heart-pulse" size={24} color="#ff5c5c" />
+              </View>
+              <View style={styles.infoIcon}>
+                <Icon name="info" size={16} color="#2196F3" />
+              </View>
+              <Text style={styles.metricLabel}>{t('Heart Rate')}</Text>
+              <Text style={styles.metricValue}>{scanResult.heartRate || 52}</Text>
+              <Text style={styles.metricUnit}> {t('bpm')}</Text>
+            </View>
+          </View>
+
+          {/* Row 2 */}
+          <View style={styles.metricsRow}>
+            <View style={styles.metricBox}>
+              <View style={styles.stressLevelIcon}>
+                <MaterialCommunityIcons name="brain" size={24} color="#ff9933" />
+              </View>
+              <View style={styles.infoIcon}>
+                <Icon name="info" size={16} color="#2196F3" />
+              </View>
+              <Text style={styles.metricLabel}> {t('Stress level')}</Text>
+              <Text style={styles.metricValue}>2</Text>
+              <Text style={styles.metricUnit}> {t('Moderate')}</Text>
+            </View>
+            
+            <View style={styles.metricBox}>
+              <View style={styles.flagIcon}>
+                <MaterialCommunityIcons name="chart-line-variant" size={22} color="#33cc33" />
+              </View>
+              <View style={styles.infoIcon}>
+                <Icon name="info" size={16} color="#2196F3" />
+              </View>
+              <Text style={styles.metricLabel}>{t('Heart Rate Variability')}</Text>
+              <Text style={styles.metricValue}>42</Text>
+              <Text style={styles.metricUnit}>{t('Milliseconds')}</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
   
   return (
     <SafeAreaView style={styles.container}>
@@ -669,11 +734,13 @@ const ScanScreen: React.FC = () => {
       {!showCamera && (
         <View style={styles.oveylayMessage}>
           <View style={styles.messageContainer}>
-            <Text style={styles.noDataMessage}>
-              {hasHealthData 
-                ? t('Your health data is now available.') 
-                : t('You have no health scan data yet. Please scan to get health data.')}
-            </Text>
+            {latestScanResult ? (
+              <LastScanResult scanResult={latestScanResult} />
+            ) : (
+              <Text style={styles.noDataMessage}>
+                {t('You have no health scan data yet. Please scan to get health data.')}
+              </Text>
+            )}
           </View>
         </View>
       )}
@@ -1110,6 +1177,115 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  
+  // Result Card styles (giống như hình)
+  resultCardContainer: {
+    // backgroundColor: 'white',
+    // borderRadius: 16,
+    // padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    // elevation: 3,
+    // shadowColor: '#000',
+    // shadowOffset: {
+    //   width: 0,
+    //   height: 2,
+    // },
+    width: '100%',
+    height: '100%',
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+  },
+  resultCardTitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  metricsContainer: {
+    flex: 1,
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    height: '25%', 
+  },
+  metricBox: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+    flex: 1,
+    marginHorizontal: 4,
+    alignItems: 'center',
+    position: 'relative',
+    height: '100%',
+  },
+  infoIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
+  BreathingRateIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#e6f7ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  heartRateIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#ffe6e6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  stressLevelIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff2e6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  flagIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#e6ffe6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  flagText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#0099cc',
+  },
+  metricLabel: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 4,
+    marginTop: 8,
+  },
+  metricValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+  },
+  metricUnit: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 2,
   },
 });
 
