@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,26 +13,23 @@ import { useAppSelector } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
 import { changeLanguage } from '../../redux/slices/userSlice';
 import i18n from '../../i18n';
+
 const Icon = require('react-native-vector-icons/Feather').default;
 
 const ChangeLanguageScreen: React.FC = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const { t } = useTranslation();
-  const currentLanguage = useAppSelector((state: RootState) => state.user.profile?.language || 'vi');
+  const currentLanguage = useAppSelector(
+    (state: RootState) => state.user.profile?.language || 'vi'
+  );
+
   const [selectedLanguage, setSelectedLanguage] = useState(currentLanguage);
 
   const languages = [
-    { code: 'en', name: t('English'), flag: '🇺🇸' },
-    { code: 'vi', name: t('Tiếng Việt'), flag: '🇻🇳' },
+    { code: 'en', flag: '🇺🇸' },
+    { code: 'vi', flag: '🇻🇳' },
   ];
-
-  // Đồng bộ ngôn ngữ hiện tại khi component mount
-  useEffect(() => {
-    if (currentLanguage) {
-      i18n.changeLanguage(currentLanguage);
-    }
-  }, [currentLanguage]);
 
   const handleLanguageChange = (languageCode: 'en' | 'vi') => {
     setSelectedLanguage(languageCode);
@@ -42,27 +39,22 @@ const ChangeLanguageScreen: React.FC = () => {
     dispatch(changeLanguage(selectedLanguage));
     i18n.changeLanguage(selectedLanguage);
     Alert.alert(
-      'Success', 
+      'Success',
       t('Language changed successfully'),
       [
         {
           text: 'OK',
-          onPress: () => {
-            // Quay về màn hình trước đó
-            navigation.goBack();
-          }
-        }
+          onPress: () => navigation.goBack(),
+        },
       ]
     );
   };
 
-  const handleBack = () => {
-    navigation.goBack();
-  };
+  const handleBack = () => navigation.goBack();
 
   return (
     <View style={styles.container}>
-      {/* Header với nút back */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Icon name="arrow-left" size={24} color="#333" />
@@ -71,6 +63,7 @@ const ChangeLanguageScreen: React.FC = () => {
         <View style={styles.placeholder} />
       </View>
 
+      {/* Language List */}
       <View style={styles.languageList}>
         {languages.map((language) => (
           <TouchableOpacity
@@ -79,15 +72,17 @@ const ChangeLanguageScreen: React.FC = () => {
               styles.languageItem,
               selectedLanguage === language.code && styles.selectedLanguageItem,
             ]}
-            onPress={() => handleLanguageChange(language.code as 'en' | 'vi')}>
+            onPress={() => handleLanguageChange(language.code as 'en' | 'vi')}
+          >
             <View style={styles.languageInfo}>
               <Text style={styles.flag}>{language.flag}</Text>
               <Text
                 style={[
                   styles.languageName,
                   selectedLanguage === language.code && styles.selectedLanguageName,
-                ]}>
-                {language.name}
+                ]}
+              >
+                {language.code === 'en' ? t('English') : t('Tiếng Việt')}
               </Text>
             </View>
             {selectedLanguage === language.code && (
@@ -97,6 +92,7 @@ const ChangeLanguageScreen: React.FC = () => {
         ))}
       </View>
 
+      {/* Save Button */}
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
         <Text style={styles.saveButtonText}>{t('Save Changes')}</Text>
       </TouchableOpacity>
@@ -120,7 +116,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   placeholder: {
-    width: 40, // Để cân bằng với nút back
+    width: 40, // Cân bằng với nút back
   },
   title: {
     fontSize: 20,

@@ -79,7 +79,7 @@ const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         name: 'John Doe',
         email: 'john.doe@example.com',
         phone: '+1234567890',
-        language: 'en' as const,
+        language: 'vi' as const,
       };
 
       dispatch(setUserProfile(sampleUserProfile));
