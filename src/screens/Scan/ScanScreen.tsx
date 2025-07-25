@@ -14,11 +14,13 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { Camera, useCameraDevices } from 'react-native-vision-camera';
+import { Camera, useCameraDevices, useFrameProcessor } from 'react-native-vision-camera';
 import { ScanStackParamList } from '../../types/navigation';
 import { nanoid } from 'nanoid/non-secure';
 import { useAppSelector } from '../../hooks/redux';
 import Svg, { Circle } from 'react-native-svg';
+import { useFaceDetector, Face, FaceDetectionOptions, } from 'react-native-vision-camera-face-detector';
+import { Worklets } from "react-native-worklets-core";
 const Icon = require('react-native-vector-icons/Feather').default;
 const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
 import Animated, { 
@@ -51,6 +53,7 @@ const ScanScreen: React.FC = () => {
   const [hasScanningTipsBeenShown, setHasScanningTipsBeenShown] = useState(false);
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [detectedFaces, setDetectedFaces] = useState<any[]>([]);
   const cameraRef = useRef<Camera>(null);
   // Tham chiếu đến timer để có thể hủy khi cần
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -73,6 +76,44 @@ const ScanScreen: React.FC = () => {
   const flashOpacity = useSharedValue(0);
   const outlineScale = useSharedValue(1);
   const outlineOpacity = useSharedValue(0.7);
+  
+  // Face detection hook
+  const { detectFaces } = useFaceDetector();
+    const faceDetectionOptions = useRef<FaceDetectionOptions>({
+    // detection options
+  }).current
+
+  const handleDetectedFaces = (faces: Face[]) => {
+    console.log('faces detected', faces)
+  }
+  
+  const detectFacesJs = Worklets.createRunOnJS(useFaceDetector(faceDetectionOptions).detectFaces);
+  const handleDetectedFacesJs = Worklets.createRunOnJS(handleDetectedFaces);
+  // Frame processor for face detection
+  // const frameProcessor = useFrameProcessor((frame) => {
+  //   'worklet';
+  //   const faces = detectFaces(frame);
+  //   runOnJS(setDetectedFaces)(faces);
+  // }, [detectFaces]);
+
+    const frameProcessor = useFrameProcessor((frame) => {
+      'worklet'
+      try {
+        detectFacesJs(frame).then((faces) => {
+          handleDetectedFacesJs(faces);
+        });
+      } catch (error) {
+        console.log(error);
+      }
+    }, [handleDetectedFacesJs])
+  
+  
+  // Log detected faces
+  useEffect(() => {
+    if (detectedFaces.length > 0) {
+      console.log('Detected faces:', detectedFaces);
+    }
+  }, [detectedFaces]);
   
   // Animated style for flash effect
   const animatedFlashStyle = useAnimatedStyle(() => {
@@ -574,7 +615,9 @@ const ScanScreen: React.FC = () => {
             device={activeDevice}
             isActive={true}
             photo={true}
-            pointerEvents="none" // Đảm bảo camera không chặn các sự kiện touch
+            pointerEvents="none" 
+            frameProcessor={frameProcessor}
+            
           />
           
           {/* Flash effect overlay */}
@@ -582,7 +625,6 @@ const ScanScreen: React.FC = () => {
           
           {/* UI Overlay for Camera */}
           <View style={styles.cameraUIOverlay}>
-            {/* Xóa nút back ở trên cùng */}
             
             {/* Top Section - Health Grid (chỉ hiển thị khi không trong chế độ quét - isScanning=false) */}
             {!isScanning && (
