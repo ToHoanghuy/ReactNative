@@ -7,6 +7,7 @@ import RootNavigator from './src/navigation/RootNavigator';
 import { LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+if (__DEV__) require('react-native-devsettings');
 // Ignore specific warnings
 LogBox.ignoreLogs([
   'Got a component with the name',
