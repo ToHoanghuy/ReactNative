@@ -12,6 +12,7 @@ import Animated, {
   withRepeat,
   runOnJS
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 const Icon = require('react-native-vector-icons/Feather').default;
 import { BottomTabParamList, HistoryStackParamList, AccountStackParamList, ScanStackParamList } from '../types/navigation';
 import { Dimensions } from 'react-native';
@@ -207,16 +208,115 @@ function AnimatedTabIcon({ routeName, color, size, focused }: {
 }
 
 export default function BottomTabNavigator() {
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const navigation = React.useRef<any>(null);
+  const translateX = useSharedValue(0);
+  const opacity = useSharedValue(0);
+  
+  // Keep a reference to the navigation object for use in the gesture handler
+  const saveNavigationRef = (navRef: any) => {
+    navigation.current = navRef;
+  };
+  
+  // Function to navigate to tab by index
+  const navigateToTab = (index: number) => {
+    const tabNames = ['History', 'Scan', 'Account'];
+    if (index >= 0 && index < tabNames.length && navigation.current) {
+      navigation.current.navigate(tabNames[index]);
+    }
+  };
+
+  // Swipe gesture handler
+  const swipeGesture = Gesture.Pan()
+    .activeOffsetX([-20, 20]) // Only activate after 20px horizontal movement
+    .failOffsetY([-15, 15])   // Fail if there's more than 15px vertical movement
+    .onStart(() => {
+      // Reset animations when swipe starts
+      opacity.value = 0;
+    })
+    .onUpdate((event) => {
+      // Update swipe indicator based on gesture
+      translateX.value = event.translationX;
+      
+      // Calculate opacity based on distance swiped (max 0.3 for subtle effect)
+      opacity.value = Math.min(0.3, Math.abs(event.translationX) / 300);
+    })
+    .onEnd((event) => {
+      // Reset animations
+      translateX.value = withTiming(0, { duration: 150 });
+      opacity.value = withTiming(0, { duration: 150 });
+      
+      // Determine swipe direction based on velocity and distance
+      const swipeDistance = event.translationX;
+      const swipeVelocity = event.velocityX;
+      const swipeThreshold = 80; // Minimum distance to consider it a swipe
+      const velocityThreshold = 400; // Minimum velocity to consider it a swipe
+      
+      if (swipeDistance > swipeThreshold || swipeVelocity > velocityThreshold) {
+        // Swipe right -> previous tab
+        if (currentIndex > 0) {
+          runOnJS(navigateToTab)(currentIndex - 1);
+        }
+      } else if (swipeDistance < -swipeThreshold || swipeVelocity < -velocityThreshold) {
+        // Swipe left -> next tab
+        if (currentIndex < 2) {
+          runOnJS(navigateToTab)(currentIndex + 1);
+        }
+      }
+    });
+
+  // Animated style for swipe indicators
+  const leftIndicatorStyle = useAnimatedStyle(() => {
+    return {
+      opacity: translateX.value > 0 ? opacity.value : 0,
+      transform: [{ translateX: translateX.value > 0 ? translateX.value / 3 : 0 }],
+    };
+  });
+
+  const rightIndicatorStyle = useAnimatedStyle(() => {
+    return {
+      opacity: translateX.value < 0 ? opacity.value : 0,
+      transform: [{ translateX: translateX.value < 0 ? translateX.value / 3 : 0 }],
+    };
+  });
+
   return (
-    <Tab.Navigator
-      tabBar={props => <CustomTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-      }}>
-      <Tab.Screen name="History" component={HistoryStackNavigator} />
-      <Tab.Screen name="Scan" component={ScanStackNavigator} />
-      <Tab.Screen name="Account" component={AccountStackNavigator} />
-    </Tab.Navigator>
+    <GestureDetector gesture={swipeGesture}>
+      <View style={{ flex: 1 }}>
+        <Animated.View 
+          style={[
+            leftIndicatorStyle
+          ]} 
+        />
+        
+        <Animated.View 
+          style={[
+            rightIndicatorStyle
+          ]} 
+        />
+        
+        <Tab.Navigator
+          tabBar={props => {
+            if (!navigation.current) {
+              saveNavigationRef(props.navigation);
+            }
+            return <CustomTabBar {...props} />;
+          }}
+          screenOptions={{
+            headerShown: false,
+          }}
+          screenListeners={{
+            state: (e) => {
+              const state = e.data.state as any;
+              setCurrentIndex(state.index);
+            }
+          }}>
+          <Tab.Screen name="History" component={HistoryStackNavigator} />
+          <Tab.Screen name="Scan" component={ScanStackNavigator} />
+          <Tab.Screen name="Account" component={AccountStackNavigator} />
+        </Tab.Navigator>
+      </View>
+    </GestureDetector>
   );
 }
 
@@ -357,4 +457,23 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 12,
   },
+  swipeIndicator: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 60,
+    backgroundColor: '#2196F3',
+    zIndex: 10,
+    opacity: 0,
+  },
+  leftIndicator: {
+    left: 0,
+    borderTopRightRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  rightIndicator: {
+    right: 0,
+    borderTopLeftRadius: 30,
+    borderBottomLeftRadius: 30,
+  }
 });

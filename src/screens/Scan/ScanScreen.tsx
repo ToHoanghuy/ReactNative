@@ -54,6 +54,11 @@ const ScanScreen: React.FC = () => {
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [detectedFaces, setDetectedFaces] = useState<any[]>([]);
+  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+  const [modalInfo, setModalInfo] = useState({
+    title: '',
+    message: ''
+  });
   const cameraRef = useRef<Camera>(null);
   // Tham chiếu đến timer để có thể hủy khi cần
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -68,6 +73,38 @@ const ScanScreen: React.FC = () => {
   const frontDevice = devices.find(device => device.position === 'front');
   const backDevice = devices.find(device => device.position === 'back');
   const activeDevice = isFrontCamera ? frontDevice : backDevice;
+  
+  // Descriptions for health metrics
+  const metricDescriptions: Record<string, { title: string; message: string }> = {
+    breathingRate: {
+      title: t('Breathing Rate'),
+      message: t('Breathing rate is the number of breaths you take per minute. Normal adult breathing rate is between 12 and 20 breaths per minute. Your breathing rate changes based on your activity level, emotional state, and overall health.')
+    },
+    heartRate: {
+      title: t('Heart Rate'),
+      message: t('Heart rate is the number of times your heart beats per minute. A normal resting heart rate for adults ranges from 60 to 100 beats per minute. A lower heart rate at rest generally implies more efficient heart function and better cardiovascular fitness.')
+    },
+    stressLevel: {
+      title: t('Stress Level'),
+      message: t('The stress level indicates your current stress state based on heart rate variability and other physiological indicators. Low stress levels (1-2) are optimal, while high levels (4-5) may indicate you need rest or relaxation techniques.')
+    },
+    heartRateVariability: {
+      title: t('Heart Rate Variability'),
+      message: t('Heart Rate Variability (HRV) measures the variation in time between consecutive heartbeats. Higher HRV typically indicates better cardiovascular health and resilience to stress, while lower HRV may suggest increased stress or potential health issues.')
+    }
+  };
+  
+  // Handle showing the modal with appropriate information
+  const handleInfoPress = (metricType: string) => {
+    const info = metricDescriptions[metricType];
+    if (info) {
+      setModalInfo({
+        title: info.title,
+        message: info.message
+      });
+      setIsInfoModalVisible(true);
+    }
+  };
   
   // Animation values for heart icon and effects - khởi tạo bên ngoài render cycle
   const scale = useSharedValue(1);
@@ -430,19 +467,18 @@ const ScanScreen: React.FC = () => {
     if (cameraPermission !== 'granted') {
       requestCameraPermission();
     } else {
-      // Show scanning tips before starting (only once in app lifecycle)
+      // Always show scanning tips before starting a scan
+      setShowScanningTips(true);
+      
+      // Set the flag to true for first-time users
       if (!hasScanningTipsBeenShown) {
-        setShowScanningTips(true);
         setHasScanningTipsBeenShown(true);
-        // Save to AsyncStorage that scanning tips have been shown
+        // Save to AsyncStorage that scanning tips have been shown (for future reference)
         try {
           await AsyncStorage.setItem('scanningTipsShown', 'true');
         } catch (error) {
           console.error('Error saving scanning tips status:', error);
         }
-      } else {
-        setShowCamera(true);
-        startFaceScan();
       }
     }
   };
@@ -473,9 +509,9 @@ const ScanScreen: React.FC = () => {
               <View style={styles.BreathingRateIcon}>
                 <MaterialCommunityIcons name="lungs" size={24} color="#0099cc" />
               </View>
-              <View style={styles.infoIcon}>
+              <TouchableOpacity style={styles.infoIcon} onPress={() => handleInfoPress('breathingRate')}>
                 <Icon name="info" size={16} color="#2196F3" />
-              </View>
+              </TouchableOpacity>
               <Text style={styles.metricLabel}> {t('Breathing Rate')}</Text>
               <Text style={styles.metricValue}>{scanResult.breathingRate || 14}</Text>
               <Text style={styles.metricUnit}>{t('Minutes')}</Text>
@@ -485,9 +521,9 @@ const ScanScreen: React.FC = () => {
               <View style={styles.heartRateIcon}>
                 <MaterialCommunityIcons name="heart-pulse" size={24} color="#ff5c5c" />
               </View>
-              <View style={styles.infoIcon}>
+              <TouchableOpacity style={styles.infoIcon} onPress={() => handleInfoPress('heartRate')}>
                 <Icon name="info" size={16} color="#2196F3" />
-              </View>
+              </TouchableOpacity>
               <Text style={styles.metricLabel}>{t('Heart Rate')}</Text>
               <Text style={styles.metricValue}>{scanResult.heartRate || 52}</Text>
               <Text style={styles.metricUnit}> {t('bpm')}</Text>
@@ -500,9 +536,9 @@ const ScanScreen: React.FC = () => {
               <View style={styles.stressLevelIcon}>
                 <MaterialCommunityIcons name="brain" size={24} color="#ff9933" />
               </View>
-              <View style={styles.infoIcon}>
+              <TouchableOpacity style={styles.infoIcon} onPress={() => handleInfoPress('stressLevel')}>
                 <Icon name="info" size={16} color="#2196F3" />
-              </View>
+              </TouchableOpacity>
               <Text style={styles.metricLabel}> {t('Stress level')}</Text>
               <Text style={styles.metricValue}>2</Text>
               <Text style={styles.metricUnit}> {t('Moderate')}</Text>
@@ -512,9 +548,9 @@ const ScanScreen: React.FC = () => {
               <View style={styles.flagIcon}>
                 <MaterialCommunityIcons name="chart-line-variant" size={22} color="#33cc33" />
               </View>
-              <View style={styles.infoIcon}>
+              <TouchableOpacity style={styles.infoIcon} onPress={() => handleInfoPress('heartRateVariability')}>
                 <Icon name="info" size={16} color="#2196F3" />
-              </View>
+              </TouchableOpacity>
               <Text style={styles.metricLabel}>{t('Heart Rate Variability')}</Text>
               <Text style={styles.metricValue}>42</Text>
               <Text style={styles.metricUnit}>{t('Milliseconds')}</Text>
@@ -794,28 +830,44 @@ const ScanScreen: React.FC = () => {
         </View>
       )}
       
-      {/* Scanning Tips Modal - Only shown once during app lifecycle */}
+      {/* Scanning Tips Modal - Shown before every scan */}
       <Modal
         visible={showScanningTips}
-        title={t('Scanning Tips')}
-        message={t('For best results:\n• Ensure good lighting\n• Remove glasses\n• Look directly at the camera\n• Keep your face within the outline')}
+        title={t('Đặt khuôn mặt của bạn vào khung hình camera và giữ yên.')}
+        message={t('• Đảm bảo khuôn mặt được chiếu sáng đều\n• Tránh đo ở nơi có nhiều nguồn sáng\n• Đảm bảo ống kính camera selfie sạch sẽ\n• Đảm bảo pin điện thoại trên 20% và Tắt Chế độ Tiết kiệm Pin\n• Giữ camera selfie ngang tầm mắt và song song với khuôn mặt')}
         onClose={() => setShowScanningTips(false)}
-        type="info"
+        type="scan-tips"
+        customIcon={
+          <View style={{ padding: 10 }}>
+            <MaterialCommunityIcons name="face-recognition" size={120} color="#2196F3" />
+          </View>
+        }
+        footerMessage={t('Khuôn mặt của bạn được xử lý trên thiết bị và không bao giờ được chia sẻ.')}
         buttons={[
           {
-            text: t('Start Scan'),
+            text: t('Bắt Đầu Đo'),
             onPress: () => {
               setShowScanningTips(false);
               setShowCamera(true);
               startFaceScan();
             },
-            type: 'primary'
+            type: 'primary',
+            customStyle: { backgroundColor: '#F5933B' }
           }
         ]}
       />
       
       {/* SplashScreen overlay */}
       <SplashScreen isLoading={isLoading} />
+      
+      {/* Info Modal */}
+      <Modal
+        visible={isInfoModalVisible}
+        title={modalInfo.title}
+        message={modalInfo.message}
+        onClose={() => setIsInfoModalVisible(false)}
+        type="info"
+      />
     </SafeAreaView>
   );
 };
@@ -1277,6 +1329,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
+    padding: 5,
+    zIndex: 10,
   },
   BreathingRateIcon: {
     width: 44,

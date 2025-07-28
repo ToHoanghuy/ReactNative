@@ -16,6 +16,7 @@ import { useDispatch } from 'react-redux';
 import { ScanStackParamList } from '../../types/navigation';
 import { addHistoryItem } from '../../redux/slices/historySlice';
 import SplashScreen from '../../components/SplashScreen';
+import Modal from '../../components/Modal';
 import Svg, { Circle } from 'react-native-svg';
 const Icon = require('react-native-vector-icons/Feather').default;
 const MaterialIcons = require('react-native-vector-icons/MaterialIcons').default;
@@ -35,6 +36,43 @@ const ResultDetailScreen: React.FC<Props> = () => {
     const route = useRoute<any>();
     const { scanResult } = route.params || {};
     const [isLoading, setIsLoading] = useState(false);
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [modalInfo, setModalInfo] = useState({
+        title: '',
+        message: ''
+    });
+
+    // Descriptions for health metrics
+    const metricDescriptions: Record<string, { title: string; message: string }> = {
+        breathingRate: {
+            title: t('Breathing Rate'),
+            message: t('Breathing rate is the number of breaths you take per minute. Normal adult breathing rate is between 12 and 20 breaths per minute. Your breathing rate changes based on your activity level, emotional state, and overall health.')
+        },
+        heartRate: {
+            title: t('Heart Rate'),
+            message: t('Heart rate is the number of times your heart beats per minute. A normal resting heart rate for adults ranges from 60 to 100 beats per minute. A lower heart rate at rest generally implies more efficient heart function and better cardiovascular fitness.')
+        },
+        stressLevel: {
+            title: t('Stress Level'),
+            message: t('The stress level indicates your current stress state based on heart rate variability and other physiological indicators. Low stress levels (1-2) are optimal, while high levels (4-5) may indicate you need rest or relaxation techniques.')
+        },
+        heartRateVariability: {
+            title: t('Heart Rate Variability'),
+            message: t('Heart Rate Variability (HRV) measures the variation in time between consecutive heartbeats. Higher HRV typically indicates better cardiovascular health and resilience to stress, while lower HRV may suggest increased stress or potential health issues.')
+        }
+    };
+
+    // Handle showing the modal with appropriate information
+    const handleInfoPress = (metricType: string) => {
+        const info = metricDescriptions[metricType];
+        if (info) {
+            setModalInfo({
+                title: info.title,
+                message: info.message
+            });
+            setIsModalVisible(true);
+        }
+    };
 
     // Lưu kết quả vào Redux khi component mount - chỉ một lần
     useEffect(() => {
@@ -164,7 +202,9 @@ const ResultDetailScreen: React.FC<Props> = () => {
                             <View style={[styles.metricIcon, { backgroundColor: '#e6f7ff' }]}>
                                 <MaterialCommunityIcons name="lungs" size={22} color="#0099cc" />
                             </View>
-                            <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
+                            <TouchableOpacity onPress={() => handleInfoPress('breathingRate')}>
+                                <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
+                            </TouchableOpacity>
                         </View>
                         <Text style={styles.metricLabel}>{t('Breathing Rate')}</Text>
                         <Text style={styles.metricValue}>{scanResult.breathingRate || 14}</Text>
@@ -178,7 +218,9 @@ const ResultDetailScreen: React.FC<Props> = () => {
                                 <MaterialCommunityIcons name="heart-pulse" size={22} color="#ff5c5c" />
                             </View>
                             {/* <MaterialIcons name="favorite" size={24} color="#F44336" /> */}
-                            <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
+                            <TouchableOpacity onPress={() => handleInfoPress('heartRate')}>
+                                <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
+                            </TouchableOpacity>
                         </View>
                         <Text style={styles.metricLabel}>{t('Heart Rate')}</Text>
                         <Text style={styles.metricValue}>{scanResult.heartRate || 52}</Text>
@@ -191,7 +233,9 @@ const ResultDetailScreen: React.FC<Props> = () => {
                             <View style={[styles.metricIcon, { backgroundColor: '#fff2e6' }]}>
                                 <MaterialCommunityIcons name="brain" size={22} color="#ff9933" />
                             </View>
-                            <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
+                            <TouchableOpacity onPress={() => handleInfoPress('stressLevel')}>
+                                <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
+                            </TouchableOpacity>
 
                         </View>
                         <Text style={styles.metricLabel}>{t('Stress Level')}</Text>
@@ -206,7 +250,9 @@ const ResultDetailScreen: React.FC<Props> = () => {
                                 <MaterialCommunityIcons name="chart-line-variant" size={22} color="#33cc33" />
                             </View>
 
-                            <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
+                            <TouchableOpacity onPress={() => handleInfoPress('heartRateVariability')}>
+                                <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
+                            </TouchableOpacity>
 
                         </View>
                         <Text style={styles.metricLabel}>{t('Heart Rate Variability')}</Text>
@@ -229,6 +275,15 @@ const ResultDetailScreen: React.FC<Props> = () => {
             
             {/* SplashScreen overlay */}
             <SplashScreen isLoading={isLoading} />
+
+            {/* Info Modal */}
+            <Modal
+                visible={isModalVisible}
+                title={modalInfo.title}
+                message={modalInfo.message}
+                onClose={() => setIsModalVisible(false)}
+                type="info"
+            />
         </SafeAreaView>
     );
 };
