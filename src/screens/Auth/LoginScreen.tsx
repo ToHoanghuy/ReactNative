@@ -29,7 +29,7 @@ type NavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, loginWithCredentials } = useAuth();
   const accounts = useSelector((state: RootState) => state.accounts.accounts);
   
   const [email, setEmail] = useState('');
@@ -93,43 +93,19 @@ const LoginScreen: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Find the user account with matching email (case insensitive)
-      const account = accounts.find(acc => acc.email.toLowerCase() === email.toLowerCase());
+      // Call the API login method
+      const result = await loginWithCredentials(email, password);
       
-      // Check if account exists
-      if (!account) {
-        setTimeout(() => {
-          setIsLoading(false);
-          showModal(t('Error'), t('Tài khoản không tồn tại'), 'error');
-        }, 1000);
-        return;
-      }
-      
-      // Check if password matches
-      if (account.password !== password) {
-        setTimeout(() => {
-          setIsLoading(false);
-          showModal(t('Error'), t('Mật khẩu không chính xác'), 'error');
-        }, 1000);
-        return;
-      }
-      
-      // If both checks pass, create user object without password
-      const user = {
-        id: account.id,
-        email: account.email,
-        name: account.name,
-      };
-      
-      // Generate a mock token
-      const mockToken = 'mock-jwt-token-' + Date.now();
-      
-      // Add a slight delay to simulate network request
-      setTimeout(() => {
-        // Dispatch login action to Redux
-        login(mockToken, user);
+      if (result.success) {
+        // Login successful - Redux and AsyncStorage are already updated
         setIsLoading(false);
-      }, 1000);
+      } else {
+        // Login failed - show error message
+        setTimeout(() => {
+          setIsLoading(false);
+          showModal(t('Error'), t(result.error || 'Đăng nhập thất bại. Vui lòng thử lại.'), 'error');
+        }, 1000);
+      }
     } catch (error) {
       setIsLoading(false);
       showModal(t('Error'), t('Đăng nhập thất bại. Vui lòng thử lại.'), 'error');

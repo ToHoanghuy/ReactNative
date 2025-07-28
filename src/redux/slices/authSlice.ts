@@ -7,6 +7,10 @@ interface AuthState {
     id: string;
     email: string;
     name: string;
+    language?: string;
+    type?: string;
+    isSubscription?: boolean;
+    role?: string;
   } | null;
 }
 

@@ -34,7 +34,7 @@ const REGISTER_FORM_STATE_KEY = 'REGISTER_FORM_STATE';
 const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, registerWithCredentials, loginWithCredentials } = useAuth();
   const dispatch = useDispatch();
   const accounts = useSelector((state: RootState) => state.accounts.accounts);
   
@@ -158,79 +158,68 @@ const RegisterScreen: React.FC = () => {
       return;
     }
     
-    // Check if email already exists
-    const emailExists = accounts.some(account => account.email.toLowerCase() === email.toLowerCase());
-    if (emailExists) {
-      showModal(t('Error'), t('Email already in use'), 'error');
-      return;
-    }
-    
     try {
       setIsLoading(true);
       
-      // Generate a unique ID
-      const newId = (Math.max(0, ...accounts.map(a => parseInt(a.id))) + 1).toString();
-      
-      // Create new account object
-      const newAccount = {
-        id: newId,
+      // Call the API to register the user
+      const result = await registerWithCredentials({
         email: email.toLowerCase(),
-        name: name,
-        phone: phone,
-        secondaryEmail: secondaryEmail,
-        referralCode: referralCode,
-        password: password
-      };
+        password: password,
+        username: name,
+        phone: phone
+      });
       
-      // Add a slight delay to simulate network request
-      setTimeout(() => {
-        // Add the new account to the store
-        dispatch(addAccount(newAccount));
+      if (result.success) {
+        // If registration is successful, log the user in
+        const loginResult = await loginWithCredentials(email, password);
         
-        // Create user object without password for auth
-        const user = {
-          id: newId,
-          email: email.toLowerCase(),
-          name: name,
-          phone: phone,
-          secondaryEmail: secondaryEmail,
-          referralCode: referralCode
-        };
-        
-        // Generate a mock token
-        const mockToken = 'mock-jwt-token-' + Date.now();
-        
-        // Login the user
-        login(mockToken, user);
-        
-        // Clear saved form data after successful registration
-        clearForm();
-        
-        setIsLoading(false);
-        
-        // Show success message and navigate to Main screen
-        showModal(
-          t('Success'), 
-          t('Registration completed successfully'),
-          'success',
-          [{ 
-            text: 'OK', 
-            // type: 'primary',
-            onPress: () => {
-              setModalVisible(false);
-              // Navigate to Main screen on successful registration
-              const rootNavigation = navigation.getParent();
-              if (rootNavigation) {
-                rootNavigation.navigate('Main');
+        if (loginResult.success) {
+          // Clear saved form data after successful registration
+          clearForm();
+          
+          setIsLoading(false);
+          
+          // Show success message and navigate to Main screen
+          showModal(
+            t('Success'), 
+            t('Registration completed successfully'),
+            'success',
+            [{ 
+              text: 'OK', 
+              onPress: () => {
+                setModalVisible(false);
+                // Navigate to Main screen on successful registration
+                const rootNavigation = navigation.getParent();
+                if (rootNavigation) {
+                  rootNavigation.navigate('Main');
+                }
               }
-            }
-          }]
-        );
-      }, 1500);
+            }]
+          );
+        } else {
+          // Registration succeeded but login failed
+          setIsLoading(false);
+          showModal(
+            t('Registration Successful'), 
+            t('Your account was created but we could not log you in automatically. Please try logging in.'),
+            'info',
+            [{ 
+              text: 'OK', 
+              onPress: () => {
+                setModalVisible(false);
+                navigation.navigate('Login');
+              }
+            }]
+          );
+        }
+      } else {
+        // Registration failed
+        setIsLoading(false);
+        showModal(t('Error'), t(result.error || 'Registration failed. Please try again.'), 'error');
+      }
     } catch (error: any) {
       setIsLoading(false);
       showModal(t('Error'), t('Registration failed. Please try again.'), 'error');
-      console.error('Registration error:', error);
       console.error('Registration error:', error);
     }
   };
