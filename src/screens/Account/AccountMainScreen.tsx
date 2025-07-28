@@ -67,6 +67,7 @@ const AccountMainScreen: React.FC = () => {
     {
       title: t('Package'),
       icon: '🎁',
+      onPress: () => navigation.navigate('Package'),
     },
     {
       title: t('Contact Us'),

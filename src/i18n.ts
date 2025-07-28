@@ -100,6 +100,8 @@ const resources = {
       'Password must be at least 6 characters': 'Password must be at least 6 characters',
       'Passwords do not match': 'Passwords do not match',
       'Password changed successfully': 'Password changed successfully',
+      'Enter your current password and create a new one': 'Enter your current password and create a new one',
+      'Current password is incorrect': 'Current password is incorrect',
       // Strings for PersonalInfoScreen
       'Full Name': 'Full Name',
       'Email Address': 'Email Address',
@@ -281,6 +283,8 @@ const resources = {
       'Password must be at least 6 characters': 'Mật khẩu phải có ít nhất 6 ký tự',
       'Passwords do not match': 'Mật khẩu không khớp',
       'Password changed successfully': 'Đổi mật khẩu thành công',
+      'Enter your current password and create a new one': 'Nhập mật khẩu hiện tại của bạn và tạo một mật khẩu mới',
+      'Current password is incorrect': 'Mật khẩu hiện tại không chính xác',
       // Strings for PersonalInfoScreen
       'Full Name': 'Họ và tên',
       'Email Address': 'Địa chỉ email',

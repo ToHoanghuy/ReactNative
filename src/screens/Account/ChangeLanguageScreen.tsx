@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +12,7 @@ import { useAppSelector } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
 import { changeLanguage } from '../../redux/slices/userSlice';
 import i18n from '../../i18n';
+import Modal from '../../components/Modal';
 
 const Icon = require('react-native-vector-icons/Feather').default;
 
@@ -25,6 +25,7 @@ const ChangeLanguageScreen: React.FC = () => {
   );
 
   const [selectedLanguage, setSelectedLanguage] = useState(currentLanguage);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const languages = [
     { code: 'en', flag: '🇺🇸' },
@@ -38,16 +39,12 @@ const ChangeLanguageScreen: React.FC = () => {
   const handleSave = () => {
     dispatch(changeLanguage(selectedLanguage));
     i18n.changeLanguage(selectedLanguage);
-    Alert.alert(
-      'Success',
-      t('Language changed successfully'),
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    navigation.goBack();
   };
 
   const handleBack = () => navigation.goBack();
@@ -96,6 +93,22 @@ const ChangeLanguageScreen: React.FC = () => {
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
         <Text style={styles.saveButtonText}>{t('Save Changes')}</Text>
       </TouchableOpacity>
+
+      {/* Success Modal */}
+      <Modal
+        visible={modalVisible}
+        title={t('Success')}
+        message={t('Language changed successfully')}
+        onClose={handleCloseModal}
+        type="success"
+        buttons={[
+          {
+            text: t('OK'),
+            onPress: handleCloseModal,
+            type: 'primary'
+          }
+        ]}
+      />
     </View>
   );
 };

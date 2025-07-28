@@ -6,7 +6,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -17,6 +16,10 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../hooks/useAuth';
 import Modal from '../../components/Modal';
+import SplashScreen from '../../components/SplashScreen';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../../redux/store';
+import { updateAccount } from '../../redux/slices/accountsSlice';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<any>;
@@ -25,7 +28,10 @@ const ChangePasswordScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuth();
+  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
+  // Get account list from Redux store to verify current password
+  const accounts = useSelector((state: RootState) => state.accounts.accounts);
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -90,6 +96,18 @@ const ChangePasswordScreen: React.FC = () => {
       return;
     }
 
+    // Check if current password is correct
+    const currentUserAccount = accounts.find(account => account.email === user?.email);
+    if (!currentUserAccount || currentUserAccount.password !== formData.currentPassword) {
+      showModal(
+        t('Error'),
+        t('Current password is incorrect'),
+        'error',
+        [{ text: t('OK'), onPress: () => setModalVisible(false) }]
+      );
+      return;
+    }
+
     if (!formData.newPassword.trim()) {
       showModal(
         t('Error'),
@@ -124,26 +142,37 @@ const ChangePasswordScreen: React.FC = () => {
       setIsLoading(true);
       
       // Here you would typically call an API to change the password
-      // Simulating API call with timeout
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // For now, we'll update the account in Redux
+      const currentUserAccount = accounts.find(account => account.email === user?.email);
       
-      // Success
-      showModal(
-        t('Success'),
-        t('Password changed successfully'),
-        'success',
-        [{ 
-          text: t('OK'), 
-          onPress: () => {
-            setModalVisible(false);
-            setFormData({
-              currentPassword: '',
-              newPassword: '',
-              confirmPassword: '',
-            });
-          }
-        }]
-      );
+      if (currentUserAccount) {
+        // Simulate API call with timeout
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Update the account password in Redux store
+        dispatch(updateAccount({
+          id: currentUserAccount.id,
+          updates: { password: formData.newPassword }
+        }));
+        
+        // Success
+        showModal(
+          t('Success'),
+          t('Password changed successfully'),
+          'success',
+          [{ 
+            text: t('OK'), 
+            onPress: () => {
+              setModalVisible(false);
+              setFormData({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: '',
+              });
+            }
+          }]
+        );
+      }
     } catch (error) {
       showModal(
         t('Error'),
@@ -159,6 +188,9 @@ const ChangePasswordScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* SplashScreen for loading state */}
+      <SplashScreen isLoading={isLoading} />
+      
       {/* Header with Back Button */}
       <View style={styles.header}>
         <TouchableOpacity 
@@ -250,7 +282,7 @@ const ChangePasswordScreen: React.FC = () => {
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={styles.changeButtonText}>{t('Change Password')}</Text>
               )}

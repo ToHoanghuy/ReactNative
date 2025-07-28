@@ -22,10 +22,12 @@ import HistoryCalendarScreen from '../screens/History/HistoryCalendarScreen';
 import HistoryChartScreen from '../screens/History/HistoryChartScreen';
 import ScanScreen from '../screens/Scan/ScanScreen';
 import ResultDetailScreen from '../screens/Scan/ResultDetailScreen';
+import ResultDetailWrapper from '../screens/History/ResultDetailWrapper';
 import AccountMainScreen from '../screens/Account/AccountMainScreen';
 import PersonalInfoScreen from '../screens/Account/PersonalInfoScreen';
 import ChangeLanguageScreen from '../screens/Account/ChangeLanguageScreen';
 import ChangePasswordScreen from '../screens/Account/ChangePasswordScreen';
+import PackageScreen from '../screens/Account/PackageScreen';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 const HistoryStack = createStackNavigator<HistoryStackParamList>();
@@ -49,6 +51,11 @@ function HistoryStackNavigator() {
         name="HistoryChart"
         component={HistoryChartScreen}
         options={{ title: 'Chart Report' }}
+      />
+      <HistoryStack.Screen
+        name="ResultDetail"
+        component={ResultDetailWrapper}
+        options={{ title: 'Result Detail' }}
       />
     </HistoryStack.Navigator>
   );
@@ -89,6 +96,10 @@ function AccountStackNavigator() {
       <AccountStack.Screen
         name="ChangePassword"
         component={ChangePasswordScreen}
+      />
+      <AccountStack.Screen
+        name="Package"
+        component={PackageScreen}
       />
     </AccountStack.Navigator>
   );

@@ -39,6 +39,20 @@ export type HistoryStackParamList = {
   HistoryList: undefined;
   HistoryCalendar: undefined;
   HistoryChart: undefined;
+  ResultDetail: {
+    scanResult: {
+      id: string;
+      date: string;
+      faceId: string;
+      result: 'success' | 'failed';
+      confidence: number;
+      wellnessScore?: number;
+      heartRate?: number;
+      breathingRate?: number;
+      bloodPressure?: string;
+      oxygenSaturation?: number;
+    };
+  };
 };
 
 export type AccountStackParamList = {
@@ -46,4 +60,5 @@ export type AccountStackParamList = {
   PersonalInfo: undefined;
   ChangeLanguage: undefined;
   ChangePassword: undefined;
+  Package: undefined;
 };

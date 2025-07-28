@@ -88,7 +88,15 @@ const HistoryListScreen: React.FC = () => {
   };
 
   const renderHistoryItem = ({ item }: { item: HistoryItem }) => (
-    <View style={[styles.historyItem, { borderLeftColor: getScoreColor(item.wellnessScore || 8) }]}>
+    <TouchableOpacity 
+      style={[styles.historyItem, { borderLeftColor: getScoreColor(item.wellnessScore || 8) }]}
+      onPress={() => {
+        console.log('Navigating to result detail with item:', item);
+        navigation.navigate('ResultDetail', {
+          scanResult: item
+        });
+      }}
+    >
       <View style={styles.itemHeader}>
         <View style={styles.scoreContainer}>
           <Text style={styles.cardTitle}>{t('Wellness Score')}</Text>
@@ -155,7 +163,7 @@ const HistoryListScreen: React.FC = () => {
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
