@@ -184,7 +184,7 @@ const resources = {
       'Scan Statistics': 'Scan Statistics',
     },
   },
-  vi: {
+  vn: {
     translation: {
       'Monthly Scan Activity': 'Hoạt động quét hàng tháng',
       'Daily Usage': 'Sử dụng hàng ngày',
@@ -368,7 +368,7 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'vi', 
+    lng: 'vn', 
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false,

@@ -6,7 +6,7 @@ export interface UserProfile {
   email: string;
   phone?: string;
   avatar?: string;
-  language: 'en' | 'vi';
+  language: 'en' | 'vn';
 }
 
 interface UserState {
@@ -19,7 +19,7 @@ const initialState: UserState = {
     id: '',
     name: '',
     email: '',
-    language: 'vi' as 'en' | 'vi',
+    language: 'vi' as 'en' | 'vn',
   },
   isLoading: false,
 };
@@ -39,7 +39,7 @@ const userSlice = createSlice({
         state.profile = { ...state.profile, ...action.payload };
       }
     },
-    changeLanguage: (state, action: PayloadAction<'en' | 'vi'>) => {
+    changeLanguage: (state, action: PayloadAction<'en' | 'vn'>) => {
       if (state.profile) {
         state.profile.language = action.payload;
       } else {

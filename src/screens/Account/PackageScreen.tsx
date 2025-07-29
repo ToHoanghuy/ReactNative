@@ -15,10 +15,12 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { AccountStackParamList } from '../../types/navigation';
 import Carousel from 'react-native-reanimated-carousel';
 import { LinearGradient } from 'react-native-linear-gradient';
-import { useSelector } from 'react-redux';
-import { PackageItem } from '../../redux/slices/packagesSlice';
+import { useSelector, useDispatch } from 'react-redux';
+import { PackageItem, setPackages, setLoading, setError, extractFeatures, getBackgroundColors } from '../../redux/slices/packagesSlice';
+import { getPackages } from '../../api/packageApi';
 import { RootState } from '../../redux/store';
 import SplashScreen from '../../components/SplashScreen';
+import { AppDispatch } from '../../redux/store';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<AccountStackParamList, 'Package'>;
@@ -28,27 +30,68 @@ const { width: screenWidth } = Dimensions.get('window');
 const PackageScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
+  const dispatch = useDispatch<AppDispatch>();
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'standard' | 'premium'>('standard');
   const [isLoading, setIsLoading] = useState(false);
+  const [tabChangeLoading, setTabChangeLoading] = useState(false);
   
+  // Get all packages and loading status from Redux store
+  const { items: allPackages, loading: packagesLoading, error: packagesError } = 
+    useSelector((state: RootState) => state.packages);
+  
+  // Load packages on mount
   useEffect(() => {
-    // Reset active index when tab changes
+    const loadPackages = async () => {
+      try {
+        setIsLoading(true);
+        dispatch(setLoading(true));
+        dispatch(setError(null));
+        
+        // Gọi API trực tiếp
+        const response = await getPackages();
+        
+        if (response.success) {
+          // Biến đổi dữ liệu để thêm các trường cần thiết
+          const transformedPackages: PackageItem[] = response.data
+            .filter(pkg => pkg.status === true) // Chỉ lấy các gói có trạng thái active
+            .map(pkg => ({
+              ...pkg,
+              backgroundColor: getBackgroundColors(pkg.type),
+              features: extractFeatures(pkg.description)
+            }));
+          
+          // Cập nhật Redux store
+          dispatch(setPackages(transformedPackages));
+        } else {
+          dispatch(setError(response.message || 'Không thể lấy danh sách gói dịch vụ'));
+        }
+      } catch (error: any) {
+        console.error('Error loading packages:', error);
+        dispatch(setError(error.message || 'Đã xảy ra lỗi khi tải danh sách gói dịch vụ'));
+      } finally {
+        setIsLoading(false);
+        dispatch(setLoading(false));
+      }
+    };
+    
+    loadPackages();
+  }, [dispatch]);
+  
+  // Reset active index when tab changes
+  useEffect(() => {
     setActiveIndex(0);
   }, [activeTab]);
-
-  // Get all packages from Redux store
-  const allPackages = useSelector((state: RootState) => state.packages.items);
   
   // Handle tab change with loading state
   const handleTabChange = (tab: 'standard' | 'premium') => {
     if (tab !== activeTab) {
-      setIsLoading(true);
+      setTabChangeLoading(true);
       setActiveTab(tab);
       
       // Simulate loading delay
       setTimeout(() => {
-        setIsLoading(false);
+        setTabChangeLoading(false);
       }, 800); // Show loading for 800ms
     }
   };
@@ -57,6 +100,31 @@ const PackageScreen: React.FC = () => {
   const packages = useMemo(() => {
     return allPackages.filter((pkg: PackageItem) => pkg.type === activeTab);
   }, [allPackages, activeTab]);
+
+  // Format price with currency
+  const formatPrice = (price: number, currency: string) => {
+    if (currency === 'USD') {
+      return `$${price.toFixed(2)}`;
+    } else {
+      // Định dạng tiền Việt Nam (VND)
+      return `${price.toLocaleString('vi-VN')}đ`;
+    }
+  };
+
+  // Format duration in days
+  const formatDuration = (days: number) => {
+    if (days >= 360) {
+      return t('1 năm');
+    } else if (days >= 180) {
+      return t('6 tháng');
+    } else if (days >= 90) {
+      return t('3 tháng');
+    } else if (days >= 30) {
+      return t('1 tháng');
+    } else {
+      return t('{{days}} ngày', { days });
+    }
+  };
 
   const renderItem = ({ item, index }: { item: PackageItem, index: number }) => {
     return (
@@ -72,18 +140,28 @@ const PackageScreen: React.FC = () => {
               <View style={styles.packageHeader}>
                 <Text style={styles.packageName}>{item.name}</Text>
                 <View style={styles.priceContainer}>
-                  <Text style={styles.packagePrice}>{item.price}</Text>
-                  <Text style={styles.packageDuration}>{item.duration}</Text>
+                  <Text style={styles.packagePrice}>
+                    {formatPrice(item.price, item.currency)}
+                  </Text>
+                  <Text style={styles.packageDuration}>
+                    {formatDuration(item.duration)}
+                  </Text>
                 </View>
               </View>
 
-              <Text style={styles.packageDescription}>{item.description}</Text>
+              <Text style={styles.packageDescription}>
+                {item.description.split('\n')[0]}
+              </Text>
 
-              <Text style={styles.featuresTitle}>{t('Gói Standard Bao Gồm:')}</Text>
+              <Text style={styles.featuresTitle}>
+                {item.type === 'standard' 
+                  ? t('Gói Standard Bao Gồm:') 
+                  : t('Gói Premium Bao Gồm:')}
+              </Text>
               
-              {item.features.map((feature, idx) => (
+              {item.features && item.features.map((feature, idx) => (
                 <View key={idx} style={styles.featureItem}>
-                  <Text style={styles.bulletPoint}>•</Text>
+                  <Icon name="check-circle" size={16} color="#FFF" style={styles.featureIcon} />
                   <Text style={styles.featureText}>{feature}</Text>
                 </View>
               ))}
@@ -101,12 +179,16 @@ const PackageScreen: React.FC = () => {
     );
   };
 
+  // Show package counts
+  const standardCount = allPackages.filter(pkg => pkg.type === 'standard').length;
+  const premiumCount = allPackages.filter(pkg => pkg.type === 'premium').length;
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* SplashScreen overlay */}
-      <SplashScreen isLoading={isLoading} />
+      {/* SplashScreen overlay for initial loading or tab change */}
+      {(isLoading || tabChangeLoading || packagesLoading) && <SplashScreen isLoading={true} />}
       
       <View style={styles.header}>
         <TouchableOpacity 
@@ -115,7 +197,7 @@ const PackageScreen: React.FC = () => {
         >
           <Icon name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('Gói')}</Text>
+        <Text style={styles.headerTitle}>{t('Gói Dịch Vụ')}</Text>
         <View style={styles.rightPlaceholder} />
       </View>
 
@@ -125,33 +207,89 @@ const PackageScreen: React.FC = () => {
           activeOpacity={0.7}
           onPress={() => handleTabChange('standard')}
         >
-          <Text style={activeTab === 'standard' ? styles.activeTabText : styles.tabText}>{t('Tiêu chuẩn')}</Text>
+          <Text style={[styles.tabText, activeTab === 'standard' && styles.activeTabText]}>
+            {t('Tiêu chuẩn')} ({standardCount})
+          </Text>
         </TouchableOpacity>
+        
         <TouchableOpacity 
           style={[styles.tabButton, activeTab === 'premium' && styles.activeTab]}
           activeOpacity={0.7}
           onPress={() => handleTabChange('premium')}
         >
-          <Text style={activeTab === 'premium' ? styles.activeTabText : styles.tabText}>{t('Cao cấp')}</Text>
+          <Text style={[styles.tabText, activeTab === 'premium' && styles.activeTabText]}>
+            {t('Cao cấp')} ({premiumCount})
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <Carousel
-        width={screenWidth * 0.9}
-        height={screenWidth * 1.5}
-        data={packages}
-        renderItem={renderItem}
-        onSnapToItem={(index) => setActiveIndex(index)}
-        mode="parallax"
-        modeConfig={{
-          parallaxScrollingScale: 0.9,
-          parallaxScrollingOffset: 50,
-        }}
-        style={styles.carousel}
-      />
+      {packagesError ? (
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle" size={48} color="#d9534f" />
+          <Text style={styles.errorText}>{packagesError}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={async () => {
+              try {
+                dispatch(setLoading(true));
+                dispatch(setError(null));
+                
+                // Gọi API trực tiếp
+                const response = await getPackages();
+                
+                if (response.success) {
+                  // Biến đổi dữ liệu để thêm các trường cần thiết
+                  const transformedPackages: PackageItem[] = response.data
+                    .filter(pkg => pkg.status === true) // Chỉ lấy các gói có trạng thái active
+                    .map(pkg => ({
+                      ...pkg,
+                      backgroundColor: getBackgroundColors(pkg.type),
+                      features: extractFeatures(pkg.description)
+                    }));
+                  
+                  // Cập nhật Redux store
+                  dispatch(setPackages(transformedPackages));
+                } else {
+                  dispatch(setError(response.message || 'Không thể lấy danh sách gói dịch vụ'));
+                }
+              } catch (error: any) {
+                console.error('Error loading packages:', error);
+                dispatch(setError(error.message || 'Đã xảy ra lỗi khi tải danh sách gói dịch vụ'));
+              } finally {
+                dispatch(setLoading(false));
+              }
+            }}
+          >
+            <Text style={styles.retryButtonText}>{t('Thử lại')}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : packages.length === 0 && !isLoading && !packagesLoading ? (
+        <View style={styles.emptyContainer}>
+          <Icon name="package" size={48} color="#777" />
+          <Text style={styles.emptyText}>
+            {activeTab === 'standard' 
+              ? t('Không có gói tiêu chuẩn nào') 
+              : t('Không có gói cao cấp nào')}
+          </Text>
+        </View>
+      ) : (
+        <Carousel
+          width={screenWidth * 0.9}
+          height={screenWidth * 1.5}
+          data={packages}
+          renderItem={renderItem}
+          onSnapToItem={(index) => setActiveIndex(index)}
+          mode="parallax"
+          modeConfig={{
+            parallaxScrollingScale: 0.9,
+            parallaxScrollingOffset: 50,
+          }}
+          style={styles.carousel}
+        />
+      )}
 
       <View style={styles.paginationContainer}>
-        {packages.length > 0 && packages.map((_: PackageItem, index: number) => (
+        {packages.map((_: PackageItem, index: number) => (
           <View
             key={index}
             style={[
@@ -177,8 +315,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: 'white',
+    borderBottomColor: '#e1e1e1',
+    backgroundColor: '#fff',
   },
   backButton: {
     padding: 8,
@@ -193,43 +331,45 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    marginVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: '#e6e6e6',
-    borderRadius: 30,
-    alignSelf: 'center',
-    overflow: 'hidden',
+    marginTop: 16,
+    marginHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#e9ecef',
+    padding: 4,
+    marginBottom: 16,
   },
   tabButton: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 30,
+    borderRadius: 6,
   },
   activeTab: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   tabText: {
-    color: '#666',
+    fontSize: 15,
     fontWeight: '500',
-    fontSize: 16,
+    color: '#6c757d',
   },
   activeTabText: {
-    color: 'white',
+    color: '#2196F3',
     fontWeight: '600',
-    fontSize: 16,
   },
   carousel: {
     alignSelf: 'center',
-    marginTop: 10,
   },
   packageCard: {
-    borderRadius: 20,
-    padding: 0, // Remove padding here as we'll add it to the scrollable content
-    margin: 10,
-    height: '95%',
+    borderRadius: 16,
+    padding: 0,
     overflow: 'hidden',
+    height: '95%',
+    margin: 10,
   },
   cardContentContainer: {
     flex: 1,
@@ -246,13 +386,13 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   spacer: {
-    height: 20, // Extra space at the bottom of scrollable content
+    height: 20,
   },
   packageHeader: {
     marginBottom: 15,
   },
   packageName: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 5,
@@ -269,7 +409,7 @@ const styles = StyleSheet.create({
   packageDuration: {
     fontSize: 16,
     color: 'rgba(255,255,255,0.8)',
-    marginLeft: 4,
+    marginLeft: 8,
   },
   packageDescription: {
     fontSize: 16,
@@ -285,13 +425,12 @@ const styles = StyleSheet.create({
   },
   featureItem: {
     flexDirection: 'row',
-    marginBottom: 10,
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
-  bulletPoint: {
-    fontSize: 18,
-    color: 'white',
+  featureIcon: {
     marginRight: 8,
-    marginTop: -5,
+    marginTop: 2,
   },
   featureText: {
     fontSize: 14,
@@ -330,6 +469,42 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'center',
+    marginTop: 16,
   },
 });
 

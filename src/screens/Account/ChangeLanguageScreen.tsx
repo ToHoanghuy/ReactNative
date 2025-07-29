@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAppSelector } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
 import { changeLanguage } from '../../redux/slices/userSlice';
+import { changeLanguage as changeLanguageAPI } from '../../api/userApi';
 import i18n from '../../i18n';
 import Modal from '../../components/Modal';
 
@@ -21,30 +23,63 @@ const ChangeLanguageScreen: React.FC = () => {
   const navigation = useNavigation();
   const { t } = useTranslation();
   const currentLanguage = useAppSelector(
-    (state: RootState) => state.user.profile?.language || 'vi'
+    (state: RootState) => state.user.profile?.language || 'vn'
   );
 
   const [selectedLanguage, setSelectedLanguage] = useState(currentLanguage);
   const [modalVisible, setModalVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const languages = [
     { code: 'en', flag: '🇺🇸' },
-    { code: 'vi', flag: '🇻🇳' },
+    { code: 'vn', flag: '🇻🇳' },
   ];
 
-  const handleLanguageChange = (languageCode: 'en' | 'vi') => {
+  const handleLanguageChange = (languageCode: 'en' | 'vn') => {
     setSelectedLanguage(languageCode);
   };
 
-  const handleSave = () => {
-    dispatch(changeLanguage(selectedLanguage));
-    i18n.changeLanguage(selectedLanguage);
-    setModalVisible(true);
+  const handleSave = async () => {
+    try {
+      setIsLoading(true);
+      setErrorMessage('');
+      
+      // Call API to change language on server
+      const response = await changeLanguageAPI(selectedLanguage);
+      
+      // If API call is successful, update Redux store and change i18n language
+      if (response.message === "User information updated successfully") {
+        // Lấy ngôn ngữ từ phản hồi API
+        const serverLanguage = response.isChangeLanguage?.language || selectedLanguage;
+        
+        // Update Redux store
+        dispatch(changeLanguage(selectedLanguage));
+        
+        // Change i18n language
+        i18n.changeLanguage(selectedLanguage);
+        
+        // Show success modal
+        setModalVisible(true);
+      } else {
+        // Handle API failure
+        setErrorMessage(response.message || t('Thay đổi ngôn ngữ thất bại'));
+      }
+    } catch (error: any) {
+      console.error('Language change error:', error);
+      setErrorMessage(error.message || t('Đã xảy ra lỗi khi thay đổi ngôn ngữ'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCloseModal = () => {
     setModalVisible(false);
     navigation.goBack();
+  };
+
+  const handleErrorClose = () => {
+    setErrorMessage('');
   };
 
   const handleBack = () => navigation.goBack();
@@ -69,7 +104,7 @@ const ChangeLanguageScreen: React.FC = () => {
               styles.languageItem,
               selectedLanguage === language.code && styles.selectedLanguageItem,
             ]}
-            onPress={() => handleLanguageChange(language.code as 'en' | 'vi')}
+            onPress={() => handleLanguageChange(language.code as 'en' | 'vn')}
           >
             <View style={styles.languageInfo}>
               <Text style={styles.flag}>{language.flag}</Text>
@@ -90,8 +125,16 @@ const ChangeLanguageScreen: React.FC = () => {
       </View>
 
       {/* Save Button */}
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>{t('Save Changes')}</Text>
+      <TouchableOpacity 
+        style={[styles.saveButton, isLoading && styles.saveButtonDisabled]} 
+        onPress={handleSave}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator size="small" color="#ffffff" />
+        ) : (
+          <Text style={styles.saveButtonText}>{t('Save Changes')}</Text>
+        )}
       </TouchableOpacity>
 
       {/* Success Modal */}
@@ -105,6 +148,22 @@ const ChangeLanguageScreen: React.FC = () => {
           {
             text: t('OK'),
             onPress: handleCloseModal,
+            type: 'primary'
+          }
+        ]}
+      />
+
+      {/* Error Modal */}
+      <Modal
+        visible={!!errorMessage}
+        title={t('Error')}
+        message={errorMessage}
+        onClose={handleErrorClose}
+        type="error"
+        buttons={[
+          {
+            text: t('OK'),
+            onPress: handleErrorClose,
             type: 'primary'
           }
         ]}
@@ -184,6 +243,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 32,
+    justifyContent: 'center',
+    height: 54,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#84c0f7',
+    opacity: 0.8,
   },
   saveButtonText: {
     color: 'white',

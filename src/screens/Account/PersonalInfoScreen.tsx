@@ -13,30 +13,34 @@ import {
   Platform,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
-import { useAppSelector } from '../../hooks/redux';
+import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
 import { updateUserProfile } from '../../redux/slices/userSlice';
+// Import the direct API function with an alias to avoid naming conflicts
+import { updateProfile as updateProfileAPI, ProfileUpdateData } from '../../api/accountApi';
 import { useAuth } from '../../hooks/useAuth';
 import Modal from '../../components/Modal';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 const PersonalInfoScreen: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { t } = useTranslation();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, updateProfile } = useAuth();
   const navigation = useNavigation();
   const userProfile = useAppSelector((state: RootState) => state.user.profile);
+  const authProfile = useAppSelector((state: RootState) => state.auth.profile);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || userProfile?.name || '',
     email: user?.email || userProfile?.email || '',
     phone: userProfile?.phone || '',
-    gender: 'male', // Default gender
-    age: '0',
-    weight: 'lbs',
-    height: 'ft',
+    gender: authProfile?.gender || 'male', // Default gender, but use from auth if available
+    age: authProfile?.age !== undefined ? authProfile.age.toString() : '0',
+    weight: authProfile?.weight !== undefined ? authProfile.weight.toString() : '0',
+    height: authProfile?.height !== undefined ? authProfile.height.toString() : '0',
+    role: user?.role || '',
+    smokingStatus: authProfile?.smokingStatus !== undefined ? authProfile.smokingStatus.toString() : '0'
   });
   
   // Trạng thái cho phép chỉnh sửa
@@ -79,20 +83,44 @@ const PersonalInfoScreen: React.FC = () => {
   }, [user]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+    // For numeric fields, validate that input is a number
+    if (['age', 'weight', 'height'].includes(field)) {
+      // Only allow numeric input (can be empty for backspace)
+      if (value === '' || /^\d+$/.test(value)) {
+        setFormData(prev => ({
+          ...prev,
+          [field]: value,
+        }));
+      }
+    } else if (field === 'smokingStatus') {
+      // Smoking status can only be 0 or 1
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+      }));
+    } else {
+      // For non-numeric fields
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
-      showModal(t('Error'), t('Name is required'), 'error');
+    // Validate numeric fields
+    if (formData.age && !/^\d+$/.test(formData.age)) {
+      showModal(t('Error'), t('Độ tuổi phải là số'), 'error');
       return;
     }
 
-    if (!formData.email.trim()) {
-      showModal(t('Error'), t('Email is required'), 'error');
+    if (formData.weight && !/^\d+$/.test(formData.weight)) {
+      showModal(t('Error'), t('Cân nặng phải là số'), 'error');
+      return;
+    }
+
+    if (formData.height && !/^\d+$/.test(formData.height)) {
+      showModal(t('Error'), t('Chiều cao phải là số'), 'error');
       return;
     }
 
@@ -102,33 +130,77 @@ const PersonalInfoScreen: React.FC = () => {
       // Update local user profile in Redux
       dispatch(updateUserProfile(formData));
       
-      // Update auth user info in Redux and storage
-      if (user) {
-        updateUser({
-          name: formData.name,
-          email: formData.email,
-        });
+      // Prepare profile data for API call
+      const profileData: ProfileUpdateData = {
+        height: parseInt(formData.height) || 0,
+        weight: parseInt(formData.weight) || 0,
+        age: parseInt(formData.age) || 0,
+        gender: formData.gender,
+        smokingStatus: parseInt(formData.smokingStatus) || 0,
+      };
+      
+      // Call the API directly to update profile
+      if (user?.id) {
+        // Log the data being sent to API
+        console.log('Sending profile data to API:', profileData);
+        
+        // Call updateProfile API directly with the renamed function
+        const response = await updateProfileAPI(profileData);
+        console.log('API response:', response);
+        
+        if (response.message === "User information updated successfully") {
+          // API call was successful - update local profile state with data from API
+          const profileUpdates = {
+            height: response.data.height,
+            weight: response.data.weight,
+            age: response.data.age,
+            gender: response.data.gender,
+            smokingStatus: response.data.smokingStatus
+          };
+          
+          // Update profile data in auth state with the returned data from API
+          updateProfile(profileUpdates);
+          
+          setIsLoading(false);
+          setIsEditing(false);
+          showModal(t('Success'), t('Cập nhật thông tin người dùng thành công'), 'success');
+        } else {
+          // API returned a different message
+          setIsLoading(false);
+          showModal(t('Error'), response.message || t('Failed to update profile'), 'error');
+        }
+      } else {
+        // Fallback if no user ID (should not happen in normal flow)
+        setIsLoading(false);
+        setIsEditing(false);
+        showModal(t('Error'), t('User ID not found. Please log in again.'), 'error');
       }
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Tắt chế độ chỉnh sửa sau khi lưu thành công
-      setIsEditing(false);
-      showModal(t('Success'), t('Profile updated successfully'), 'success');
-    } catch (error) {
-      showModal(t('Error'), t('Failed to update profile. Please try again.'), 'error');
-      console.error('Profile update error:', error);
-    } finally {
+    } catch (error: any) {
       setIsLoading(false);
+      // Get message from error object if available
+      const errorMessage = error.message || t('An unexpected error occurred. Please try again.');
+      showModal(t('Error'), errorMessage, 'error');
+      console.error('Profile update error:', error);
     }
   };
 
   const selectGender = (gender: 'male' | 'female') => {
-    setFormData(prev => ({
-      ...prev,
-      gender
-    }));
+    // Only allow gender selection if it hasn't been set before
+    // Consider gender as set if authProfile.gender exists and matches formData.gender
+    const isGenderAlreadySet = authProfile?.gender && authProfile.gender === formData.gender;
+    
+    if (!isGenderAlreadySet) {
+      setFormData(prev => ({
+        ...prev,
+        gender
+      }));
+    } else {
+      showModal(
+        t('Không thể thay đổi giới tính'), 
+        t('Giới tính chỉ được thiết lập một lần và không thể thay đổi sau đó.'), 
+        'info'
+      );
+    }
   };
 
   return (
@@ -147,9 +219,22 @@ const PersonalInfoScreen: React.FC = () => {
           <Text style={styles.headerTitle}>{t('Tài khoản')}</Text>
           <TouchableOpacity 
             style={[styles.editButton, isEditing && styles.editButtonActive]} 
-            onPress={() => setIsEditing(!isEditing)}
+            onPress={() => {
+              if (isEditing) {
+                // If currently editing, call handleSave when pressed
+                handleSave();
+              } else {
+                // If not editing, just toggle edit mode
+                setIsEditing(true);
+              }
+            }}
+            disabled={isLoading}
           >
-            <Icon name={isEditing ? "check" : "edit-2"} size={20} color={isEditing ? "#2196F3" : "#000"} />
+            {isLoading && isEditing ? (
+              <ActivityIndicator size="small" color="#2196F3" />
+            ) : (
+              <Icon name={isEditing ? "check" : "edit-2"} size={20} color={isEditing ? "#2196F3" : "#000"} />
+            )}
           </TouchableOpacity>
         </View>
       {/* <StatusBar backgroundColor="#2196F3" barStyle="light-content" /> */}
@@ -160,76 +245,48 @@ const PersonalInfoScreen: React.FC = () => {
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>{t('Tên người dùng')}:</Text>
             <View style={styles.inputContainer}>
-              {isEditing ? (
-                <TextInput
-                  style={styles.input}
-                  value={formData.name}
-                  onChangeText={(value) => handleInputChange('name', value)}
-                  placeholder={t('Nhập tên của bạn')}
-                  placeholderTextColor="#999"
-                />
-              ) : (
-                <Text style={styles.fieldValue}>{formData.name}</Text>
-              )}
+              <Text style={styles.fieldValue}>{formData.name}</Text>
             </View>
           </View>
           
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>{t('Số điện thoại')}:</Text>
             <View style={styles.inputContainer}>
-              {isEditing ? (
-                <TextInput
-                  style={styles.input}
-                  value={formData.phone}
-                  onChangeText={(value) => handleInputChange('phone', value)}
-                  placeholder={t('Nhập số điện thoại')}
-                  placeholderTextColor="#999"
-                  keyboardType="phone-pad"
-                />
-              ) : (
-                <Text style={styles.fieldValue}>{formData.phone || '-'}</Text>
-              )}
+              <Text style={styles.fieldValue}>{formData.phone || '-'}</Text>
             </View>
           </View>
           
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>{t('Email')}:</Text>
             <View style={styles.inputContainer}>
-              {isEditing ? (
-                <TextInput
-                  style={styles.input}
-                  value={formData.email}
-                  onChangeText={(value) => handleInputChange('email', value)}
-                  placeholder={t('Nhập email')}
-                  placeholderTextColor="#999"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              ) : (
-                <Text style={styles.fieldValue}>{formData.email}</Text>
-              )}
+              <Text style={styles.fieldValue}>{formData.email}</Text>
             </View>
           </View>
           
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>{t('Vai trò')}:</Text>
-            <Text style={styles.fieldValue}>user</Text>
+            <Text style={styles.fieldValue}>{user?.role}</Text>
           </View>
           
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('Giới tính')}</Text>
             {isEditing && (
-              <Text style={styles.sectionDescription}>{t('Giới tính chỉ được chọn một lần duy nhất. Bạn không thể thay đổi giới tính của mình sau khi đã chọn.')}</Text>
+              <Text style={styles.sectionDescription}>
+                {authProfile?.gender 
+                  ? t('Giới tính đã được chọn và không thể thay đổi.') 
+                  : t('Giới tính chỉ được chọn một lần duy nhất. Bạn không thể thay đổi giới tính của mình sau khi đã chọn.')}
+              </Text>
             )}
             
             <View style={styles.genderSelectionContainer}>
               <TouchableOpacity 
                 style={[
                   styles.genderOption, 
-                  formData.gender === 'male' ? styles.genderOptionSelected : {}
+                  formData.gender === 'male' ? styles.genderOptionSelected : {},
+                  authProfile?.gender ? {opacity: 0.7} : {}
                 ]}
-                onPress={() => isEditing && selectGender('male')}
-                disabled={!isEditing}
+                onPress={() => isEditing && !authProfile?.gender && selectGender('male')}
+                disabled={!isEditing || !!authProfile?.gender}
               >
                 <Image 
                   source={require('../../assets/images/gender-male.png')} 
@@ -242,10 +299,11 @@ const PersonalInfoScreen: React.FC = () => {
               <TouchableOpacity 
                 style={[
                   styles.genderOption, 
-                  formData.gender === 'female' ? styles.genderOptionSelected : {}
+                  formData.gender === 'female' ? styles.genderOptionSelected : {},
+                  authProfile?.gender ? {opacity: 0.7} : {}
                 ]}
-                onPress={() => isEditing && selectGender('female')}
-                disabled={!isEditing}
+                onPress={() => isEditing && !authProfile?.gender && selectGender('female')}
+                disabled={!isEditing || !!authProfile?.gender}
               >
                 <Image 
                   source={require('../../assets/images/gender-female.png')} 
@@ -308,22 +366,54 @@ const PersonalInfoScreen: React.FC = () => {
             </View>
           </View>
           
-          {isEditing && (
-            <TouchableOpacity 
-              style={styles.saveButton} 
-              onPress={handleSave}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('Smoking Status')}</Text>
+            <View style={styles.valueWithUnitContainer}>
+              {isEditing ? (
+                <View style={{flexDirection: 'row', justifyContent: 'space-around', width: '100%'}}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.smokingOption, 
+                      formData.smokingStatus === '0' ? styles.smokingOptionSelected : {}
+                    ]}
+                    onPress={() => handleInputChange('smokingStatus', '0')}
+                  >
+                    <Text style={[
+                      styles.smokingOptionText, 
+                      formData.smokingStatus === '0' ? styles.smokingOptionTextSelected : {}
+                    ]}>
+                      {t('Không')}
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[
+                      styles.smokingOption, 
+                      formData.smokingStatus !== '0' ? styles.smokingOptionSelected : {}
+                    ]}
+                    onPress={() => handleInputChange('smokingStatus', '1')}
+                  >
+                    <Text style={[
+                      styles.smokingOptionText, 
+                      formData.smokingStatus !== '0' ? styles.smokingOptionTextSelected : {}
+                    ]}>
+                      {t('Có')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               ) : (
                 <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <Text style={styles.saveButtonText}>{t('Nâng cấp')}</Text>
-                  <Icon name="arrow-up" size={18} color="#fff" style={{marginLeft: 5}} />
+                  <Text style={styles.fieldValue}>
+                    {parseInt(formData.smokingStatus) === 0 
+                      ? t('Không hút thuốc') 
+                      : t('Có hút thuốc')}
+                  </Text>
                 </View>
               )}
-            </TouchableOpacity>
-          )}
+            </View>
+          </View>
+          
+          {/* Remove the save button as saving is now handled by the check button in the header */}
         </View>
       </ScrollView>
       
@@ -495,6 +585,29 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: 'white',
     fontSize: 18,
+    fontWeight: 'bold',
+  },
+  smokingOption: {
+    width: '40%',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  smokingOptionSelected: {
+    borderColor: '#2196F3',
+    borderWidth: 2,
+    backgroundColor: 'rgba(33, 150, 243, 0.05)',
+  },
+  smokingOptionText: {
+    fontSize: 18,
+    color: '#666',
+  },
+  smokingOptionTextSelected: {
+    color: '#2196F3',
     fontWeight: 'bold',
   },
 });

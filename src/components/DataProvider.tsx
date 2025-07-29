@@ -80,7 +80,7 @@ const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         name: 'John Doe',
         email: 'john.doe@example.com',
         phone: '+1234567890',
-        language: 'vi' as const,
+        language: 'vn' as const,
       };
 
       dispatch(setUserProfile(sampleUserProfile));
@@ -113,8 +113,12 @@ const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       const samplePackages = [
         {
           id: '1',
+          _id: 'pkg1',
+          userId: 'user1',
           name: 'Basic Care 30',
           price: '$7.66',
+          discount: 0,
+          currency: 'USD',
           duration: '/30 ngày',
           description: 'Gói Standard: Nắm Bắt Sức Khỏe Cơ Bản Trong Tầm Tay',
           features: [
@@ -126,12 +130,20 @@ const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             'SpO2 (Độ bão hòa oxy trong máu): Đo lượng lượng oxy trong máu, chỉ số quan trọng về sức khỏe hô hấp.',
           ],
           backgroundColor: ['#3498db', '#2ecc71'] as [string, string],
-          type: 'standard' as const
+          type: 'standard' as const,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: 'active',
+          location: 'Vietnam',
         },
         {
           id: '2',
+          _id: 'pkg2',
+          userId: 'user1',
           name: 'Premium Care 90',
           price: '$19.99',
+          discount: 0,
+          currency: 'USD',
           duration: '/90 ngày',
           description: 'Gói Premium: Phân Tích Chuyên Sâu Cho Sức Khỏe Toàn Diện',
           features: [
@@ -143,12 +155,20 @@ const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             'Đánh giá nguy cơ bệnh tim mạch',
           ],
           backgroundColor: ['#9b59b6', '#3498db'] as [string, string],
-          type: 'premium' as const
+          type: 'premium' as const,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: 'active',
+          location: 'Vietnam',
         },
         {
           id: '3',
+          _id: 'pkg3',
+          userId: 'user1',
           name: 'Complete Care 365',
           price: '$59.99',
+          discount: 0,
+          currency: 'USD',
           duration: '/365 ngày',
           description: 'Gói Complete: Chăm Sóc Toàn Diện Suốt Cả Năm',
           features: [
@@ -160,12 +180,20 @@ const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             'Hỗ trợ y tế khẩn cấp 24/7',
           ],
           backgroundColor: ['#e74c3c', '#f39c12'] as [string, string],
-          type: 'premium' as const
+          type: 'premium' as const,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: 'active',
+          location: 'Vietnam',
         },
         {
           id: '4',
+          _id: 'pkg4',
+          userId: 'user1',
           name: 'Family Plan',
           price: '$29.99',
+          discount: 0,
+          currency: 'USD',
           duration: '/30 ngày',
           description: 'Gói Gia Đình: Chăm Sóc Sức Khỏe Cho Cả Gia Đình',
           features: [
@@ -177,12 +205,16 @@ const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             'Theo dõi lịch tiêm chủng gia đình',
           ],
           backgroundColor: ['#16a085', '#27ae60'] as [string, string],
-          type: 'standard' as const
+          type: 'standard' as const,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: 'active',
+          location: 'Vietnam',
         }
       ];
       
 
-      dispatch(setPackages(samplePackages));
+      dispatch(setPackages([]));
     };
 
     initializeData();
