@@ -58,6 +58,12 @@ export interface NotificationSwitchResponse {
   success?: boolean;
 }
 
+// Interface for change password API response
+export interface ChangePasswordResponse {
+  message: string;
+  success?: boolean;
+}
+
 export const updateProfile = async (profileData: ProfileUpdateData): Promise<ProfileApiResponse> => {
   try {
     const response = await axios.post<ProfileApiResponse>('/api/v1/profile/update', profileData);
@@ -117,6 +123,45 @@ export const switchNotification = async (enabled: boolean): Promise<Notification
       };
     } else {
       console.error('Switch Notification API error:', error.message);
+      throw {
+        status: 0,
+        message: error.message || 'An unknown error occurred',
+        data: null
+      };
+    }
+  }
+};
+
+export const changePassword = async (oldPassword: string, newPassword: string): Promise<ChangePasswordResponse> => {
+  try {
+    const response = await axios.post<ChangePasswordResponse>('/api/v1/auth/change-password', {
+      oldPassword,
+      newPassword
+    });
+    
+    // Thêm trường success để tương thích với logic hiện tại
+    if (response.data.message === "Password changed successfully") {
+      response.data.success = true;
+    }
+    
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      console.error('Change Password API error:', error.response.data);
+      throw {
+        status: error.response.status,
+        message: error.response.data.message || 'Password change failed',
+        data: error.response.data
+      };
+    } else if (error.request) {
+      console.error('Change Password API error: No response received', error.request);
+      throw {
+        status: 0,
+        message: 'No response from server. Check your internet connection.',
+        data: null
+      };
+    } else {
+      console.error('Change Password API error:', error.message);
       throw {
         status: 0,
         message: error.message || 'An unknown error occurred',

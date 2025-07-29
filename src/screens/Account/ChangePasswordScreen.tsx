@@ -20,6 +20,7 @@ import SplashScreen from '../../components/SplashScreen';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { updateAccount } from '../../redux/slices/accountsSlice';
+import { changePassword as apiChangePassword } from '../../api/accountApi';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<any>;
@@ -86,22 +87,11 @@ const ChangePasswordScreen: React.FC = () => {
   };
 
   const handleChangePassword = async () => {
+    // Validate inputs
     if (!formData.currentPassword.trim()) {
       showModal(
         t('Error'),
         t('Current password is required'),
-        'error',
-        [{ text: t('OK'), onPress: () => setModalVisible(false) }]
-      );
-      return;
-    }
-
-    // Check if current password is correct
-    const currentUserAccount = accounts.find(account => account.email === user?.email);
-    if (!currentUserAccount || currentUserAccount.password !== formData.currentPassword) {
-      showModal(
-        t('Error'),
-        t('Current password is incorrect'),
         'error',
         [{ text: t('OK'), onPress: () => setModalVisible(false) }]
       );
@@ -141,21 +131,14 @@ const ChangePasswordScreen: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Here you would typically call an API to change the password
-      // For now, we'll update the account in Redux
-      const currentUserAccount = accounts.find(account => account.email === user?.email);
+      // Gọi API đổi mật khẩu
+      const response = await apiChangePassword(
+        formData.currentPassword, 
+        formData.newPassword
+      );
       
-      if (currentUserAccount) {
-        // Simulate API call with timeout
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Update the account password in Redux store
-        dispatch(updateAccount({
-          id: currentUserAccount.id,
-          updates: { password: formData.newPassword }
-        }));
-        
-        // Success
+      if (response.success) {
+        // Xử lý khi đổi mật khẩu thành công
         showModal(
           t('Success'),
           t('Password changed successfully'),
@@ -164,19 +147,41 @@ const ChangePasswordScreen: React.FC = () => {
             text: t('OK'), 
             onPress: () => {
               setModalVisible(false);
+              // Reset form sau khi đổi mật khẩu thành công
               setFormData({
                 currentPassword: '',
                 newPassword: '',
                 confirmPassword: '',
               });
+              
+              // Trở về màn hình trước đó
+              navigation.goBack();
             }
           }]
         );
+      } else {
+        // Xử lý khi API trả về lỗi
+        showModal(
+          t('Error'),
+          t(response.message || 'Failed to change password'),
+          'error',
+          [{ text: t('OK'), onPress: () => setModalVisible(false) }]
+        );
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Xử lý khi có lỗi từ API
+      let errorMessage = t('Failed to change password. Please try again.');
+      
+      // Hiển thị thông báo lỗi cụ thể nếu có
+      if (error.message === 'Current password is incorrect') {
+        errorMessage = t('Current password is incorrect');
+      } else if (error.status === 401) {
+        errorMessage = t('Your session has expired. Please login again.');
+      }
+      
       showModal(
         t('Error'),
-        t('Failed to change password. Please try again.'),
+        errorMessage,
         'error',
         [{ text: t('OK'), onPress: () => setModalVisible(false) }]
       );
