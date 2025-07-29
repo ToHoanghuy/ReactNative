@@ -3,15 +3,29 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Keys for storage
 export const STORAGE_KEYS = {
   AUTH_TOKEN: '@auth_token',
+  REFRESH_TOKEN: '@refresh_token',
   USER_INFO: '@user_info',
+  USER_PROFILE: '@user_profile',
   HISTORY_DATA: '@history_data',
+  TOKEN_EXPIRY: '@token_expiry',
 };
 
 // Save auth data
-export const saveAuthData = async (token: string, user: any) => {
+export const saveAuthData = async (token: string, user: any, profile?: any, refreshToken?: string) => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
     await AsyncStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(user));
+    
+    // Save refresh token if provided
+    if (refreshToken) {
+      await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    }
+    
+    // Save profile if provided
+    if (profile) {
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
+    }
+    
     return true;
   } catch (error) {
     console.error('Error saving auth data:', error);
@@ -23,7 +37,9 @@ export const saveAuthData = async (token: string, user: any) => {
 export const getAuthData = async () => {
   try {
     const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
     const userString = await AsyncStorage.getItem(STORAGE_KEYS.USER_INFO);
+    const profileString = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
     
     if (!token || !userString) {
       return null;
@@ -31,7 +47,9 @@ export const getAuthData = async () => {
     
     return {
       token,
+      refreshToken,
       user: JSON.parse(userString),
+      profile: profileString ? JSON.parse(profileString) : null,
     };
   } catch (error) {
     console.error('Error getting auth data:', error);
@@ -42,7 +60,13 @@ export const getAuthData = async () => {
 // Clear auth data
 export const clearAuthData = async () => {
   try {
-    await AsyncStorage.multiRemove([STORAGE_KEYS.AUTH_TOKEN, STORAGE_KEYS.USER_INFO]);
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.AUTH_TOKEN, 
+      STORAGE_KEYS.REFRESH_TOKEN,
+      STORAGE_KEYS.USER_INFO,
+      STORAGE_KEYS.USER_PROFILE,
+      STORAGE_KEYS.TOKEN_EXPIRY
+    ]);
     return true;
   } catch (error) {
     console.error('Error clearing auth data:', error);

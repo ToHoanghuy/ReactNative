@@ -33,7 +33,9 @@ const RootNavigator: React.FC = () => {
           // Restore auth state from storage
           dispatch(login({ 
             token: authData.token, 
-            user: authData.user 
+            refreshToken: authData.refreshToken ?? '', 
+            user: authData.user,
+            profile: authData.profile
           }));
         }
       } catch (error) {

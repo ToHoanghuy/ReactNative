@@ -36,6 +36,37 @@ export const login = async (data: { email: string; password: string, clientId: s
   }
 };
 
+export const refreshAccessToken = async (data: { refreshToken: string; clientId: string }) => {
+  try {
+    const response = await axios.post('/api/v1/auth/refresh-token', data);
+    return response.data;
+  } catch (error: any) {
+    // Enhanced error handling
+    if (error.response) {
+      console.error('Refresh Token API error:', error.response.data);
+      throw {
+        status: error.response.status,
+        message: error.response.data.message || 'Token refresh failed',
+        data: error.response.data
+      };
+    } else if (error.request) {
+      console.error('Refresh Token API error: No response received', error.request);
+      throw {
+        status: 0,
+        message: 'No response from server. Check your internet connection.',
+        data: null
+      };
+    } else {
+      console.error('Refresh Token API error:', error.message);
+      throw {
+        status: 0,
+        message: error.message || 'An unknown error occurred',
+        data: null
+      };
+    }
+  }
+};
+
 export const register = async (data: { email: string; password: string; username: string; phone: string; role: string }) => {
   try {
     const response = await axios.post('/api/v1/auth/register', data);

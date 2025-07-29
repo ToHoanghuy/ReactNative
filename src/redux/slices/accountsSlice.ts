@@ -5,14 +5,23 @@ export interface Account {
   email: string;
   name: string;
   password: string;
+  height?: number;
+  weight?: number;
+  age?: number;
+  gender?: string;
+  smokingStatus?: number;
 }
 
 interface AccountsState {
   accounts: Account[];
+  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  error: string | null;
 }
 
 const initialState: AccountsState = {
   accounts: [],
+  status: 'idle',
+  error: null,
 };
 
 const accountsSlice = createSlice({
@@ -34,7 +43,7 @@ const accountsSlice = createSlice({
     removeAccount: (state, action: PayloadAction<string>) => {
       state.accounts = state.accounts.filter(account => account.id !== action.payload);
     },
-  },
+  }
 });
 
 export const { setAccounts, addAccount, updateAccount, removeAccount } = accountsSlice.actions;
