@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,22 +7,30 @@ import {
   ScrollView,
   Image,
   Alert,
+  ActivityIndicator,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '../../hooks/redux';
+import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
 import { AccountStackParamList } from '../../types/navigation';
 import { useAuth } from '../../hooks/useAuth';
+import { switchNotification } from '../../api/accountApi';
+import { updateNotificationSettings } from '../../redux/slices/userSlice';
+import ToggleSwitch from '../../components/ToggleSwitch';
 
 type NavigationProp = StackNavigationProp<AccountStackParamList, 'AccountMain'>;
 
 const AccountMainScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const userProfile = useAppSelector((state: RootState) => state.user.profile);
   const { user, logout } = useAuth();
+  const [isLoadingNotification, setIsLoadingNotification] = useState(false);
 
   const handleLogout = () => {
     Alert.alert(
@@ -43,6 +51,39 @@ const AccountMainScreen: React.FC = () => {
     );
   };
 
+  const handleToggleNotification = async () => {
+    try {
+      setIsLoadingNotification(true);
+      
+      // Gọi API để thay đổi trạng thái thông báo
+      const newNotificationState = !(userProfile?.emailNotificationsEnabled ?? false);
+      const response = await switchNotification(newNotificationState);
+      
+      if (response.message === "User information updated successfully") {
+        // Cập nhật redux store với trạng thái mới từ phản hồi API
+        const notificationEnabled = response.isSubscription.emailNotificationsEnabled;
+        dispatch(updateNotificationSettings(notificationEnabled));
+        
+        // Hiển thị thông báo thành công nếu cần
+        console.log(`Notifications ${notificationEnabled ? 'enabled' : 'disabled'} successfully`);
+      } else {
+        // Xử lý khi không thành công
+        Alert.alert(
+          t('Error'),
+          t('Failed to update notification settings. Please try again later.')
+        );
+      }
+    } catch (error) {
+      console.error('Toggle notification error:', error);
+      Alert.alert(
+        t('Error'),
+        t('An error occurred while updating notification settings.')
+      );
+    } finally {
+      setIsLoadingNotification(false);
+    }
+  };
+
   const menuItems = [
     {
       title: t('Personal Information'),
@@ -53,6 +94,9 @@ const AccountMainScreen: React.FC = () => {
       title: t('Notifications'),
       icon: '🔔',
       toggle: true,
+      isEnabled: userProfile?.emailNotificationsEnabled ?? false,
+      onPress: handleToggleNotification,
+      isLoading: isLoadingNotification,
     },
     {
       title: t('Change Password'),
@@ -103,7 +147,7 @@ const AccountMainScreen: React.FC = () => {
               item.color ? { borderColor: item.color + '20', borderWidth: 1 } : null
             ]}
             onPress={item.onPress}
-            disabled={!item.onPress}
+            disabled={!item.onPress || (item.toggle && item.isLoading)}
           >
             <View style={styles.menuCardContent}>
               <View style={[
@@ -122,9 +166,15 @@ const AccountMainScreen: React.FC = () => {
             
             {item.toggle && (
               <View style={styles.toggleContainer}>
-                <View style={styles.toggle}>
-                  <View style={styles.toggleCircle} />
-                </View>
+                {/* {item.isLoading ? (
+                  <ActivityIndicator size="small" color="#2196F3" />
+                ) : ( */}
+                  <ToggleSwitch
+                    isEnabled={item.isEnabled}
+                    onToggle={item.onPress}
+                    disabled={item.isLoading}
+                  />
+                {/* )} */}
               </View>
             )}
           </TouchableOpacity>
@@ -201,21 +251,6 @@ const styles = StyleSheet.create({
   toggleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  toggle: {
-    width: 50,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#666',
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-    alignItems: 'flex-end',
-  },
-  toggleCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: 'white',
   },
   appInfo: {
     alignItems: 'center',

@@ -7,6 +7,7 @@ export interface UserProfile {
   phone?: string;
   avatar?: string;
   language: 'en' | 'vn';
+  emailNotificationsEnabled?: boolean;
 }
 
 interface UserState {
@@ -20,6 +21,7 @@ const initialState: UserState = {
     name: '',
     email: '',
     language: 'vi' as 'en' | 'vn',
+    emailNotificationsEnabled: false,
   },
   isLoading: false,
 };
@@ -55,6 +57,11 @@ const userSlice = createSlice({
     clearUserProfile: (state) => {
       state.profile = null;
     },
+    updateNotificationSettings: (state, action: PayloadAction<boolean>) => {
+      if (state.profile) {
+        state.profile.emailNotificationsEnabled = action.payload;
+      }
+    },
   },
 });
 
@@ -64,5 +71,6 @@ export const {
   updateUserProfile,
   changeLanguage,
   clearUserProfile,
+  updateNotificationSettings,
 } = userSlice.actions;
 export default userSlice.reducer;
