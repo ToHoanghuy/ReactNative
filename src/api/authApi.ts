@@ -128,7 +128,16 @@ export const refreshAccessToken = async (data: { refreshToken: string; clientId:
   }
 };
 
-export const register = async (data: { email: string; password: string; username: string; phone: string; role: string }) => {
+export const register = async (data: { 
+  email: string; 
+  password: string; 
+  username: string; 
+  phone: string; 
+  role: string;
+  optionEmail?: string;
+  invitationCode?: string;
+  address?: string;
+}) => {
   try {
     const response = await axios.post('/api/v1/auth/register', data);
     return response.data;

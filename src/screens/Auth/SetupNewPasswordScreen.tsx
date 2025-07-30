@@ -19,6 +19,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import Modal from '../../components/Modal';
 import SplashScreen from '../../components/SplashScreen';
+import { resetPassword } from '../../api/passwordResetApi';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, 'SetupNewPassword'>;
@@ -75,7 +76,7 @@ const SetupNewPasswordScreen: React.FC<Props> = ({ route }) => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     // Form validation
     if (!newPassword.trim()) {
       showModal(t('Error'), t('New password is required'), 'error');
@@ -94,28 +95,44 @@ const SetupNewPasswordScreen: React.FC<Props> = ({ route }) => {
     
     setIsLoading(true);
     
-    // Simulate password reset process (in a real app, this would be an API call)
-    setTimeout(() => {
+    try {
+      // Call the API to reset the password
+      const result = await resetPassword({
+        email,
+        otp,
+        newPassword
+      });
+      
       setIsLoading(false);
       
-      // Show success message
-      showModal(
-        t('Success'),
-        t('Your password has been reset successfully.'),
-        'success',
-        [
-          {
-            text: 'OK',
-            // type: 'primary',
-            onPress: () => {
-              setModalVisible(false);
-              // Navigate to login screen
-              navigation.navigate('Login');
+      if (result.success) {
+        // Show success modal
+        showModal(
+          t('Success'), 
+          t('Your password has been reset successfully.'), 
+          'success',
+          [
+            { 
+              text: t('Go to Login'), 
+              onPress: () => {
+                setModalVisible(false);
+                navigation.navigate('Login');
+              },
+              // type: 'primary'
             }
-          }
-        ]
-      );
-    }, 1500);
+          ]
+        );
+      } else {
+        showModal(t('Error'), result.message || t('Failed to reset password. Please try again.'), 'error');
+      }
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Password reset error:', error);
+      showModal(t('Error'), t('Failed to reset password. Please try again.'), 'error');
+    }
+  
+      // Show success message
+
   };
   
   return (

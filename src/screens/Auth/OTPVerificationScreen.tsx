@@ -17,6 +17,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../types/navigation';
 import Modal from '../../components/Modal';
 import SplashScreen from '../../components/SplashScreen';
+import { requestPasswordReset, verifyOtpForPasswordReset } from '../../api/passwordResetApi';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, 'OTPVerification'>;
@@ -97,18 +98,35 @@ const OTPVerificationScreen: React.FC<Props> = ({ route }) => {
     }
   };
   
-  const handleResendOtp = () => {
+  const handleResendOtp = async () => {
     if (!canResend) return;
     
     // Reset the timer and resend state
     setTimeLeft(60);
     setCanResend(false);
-    
-    // Simulate OTP resend
-    showModal(t('Success'), t('A new OTP has been sent to your email'), 'success');
+    const otp='123456';
+    try {
+      // Call the API to resend OTP
+      const result = await requestPasswordReset(email, otp);
+      
+      if (result.success) {
+        showModal(t('Success'), t('A new OTP has been sent to your email'), 'success');
+      } else {
+        showModal(t('Error'), result.message || t('Failed to resend OTP'), 'error');
+        // Allow immediate retry if failed
+        setCanResend(true);
+        setTimeLeft(0);
+      }
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      showModal(t('Error'), t('Failed to resend OTP'), 'error');
+      // Allow immediate retry if failed
+      setCanResend(true);
+      setTimeLeft(0);
+    }
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     const otpString = otp.join('');
     
     // Check if OTP is complete
@@ -119,13 +137,26 @@ const OTPVerificationScreen: React.FC<Props> = ({ route }) => {
     
     setIsLoading(true);
     
-    // Simulate OTP verification (in a real app, this would be an API call)
-    setTimeout(() => {
+    try {
+      // Call the API to verify the OTP
+      const result = await verifyOtpForPasswordReset({
+        email: email,
+        otp: otpString
+      });
+      
       setIsLoading(false);
       
-      // Successful OTP verification
-      navigation.navigate('SetupNewPassword', { email, otp: otpString });
-    }, 1500);
+      if (result.success) {
+        // Successful OTP verification
+        navigation.navigate('SetupNewPassword', { email, otp: otpString });
+      } else {
+        showModal(t('Error'), result.message || t('Invalid OTP. Please try again.'), 'error');
+      }
+    } catch (error) {
+      setIsLoading(false);
+      console.error('OTP verification error:', error);
+      showModal(t('Error'), t('Failed to verify OTP. Please try again.'), 'error');
+    }
   };
   
   return (

@@ -69,7 +69,10 @@ export const useAuth = () => {
     email: string; 
     password: string; 
     username: string; 
-    phone: string; 
+    phone: string;
+    optionEmail?: string;
+    invitationCode?: string;
+    address?: string;
   }) => {
     try {
       // Call the API with role defaulted to 'user'

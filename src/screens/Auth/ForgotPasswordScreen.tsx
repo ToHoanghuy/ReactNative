@@ -21,6 +21,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import Modal from '../../components/Modal';
 import SplashScreen from '../../components/SplashScreen';
+import { requestPasswordReset } from '../../api/passwordResetApi';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
@@ -72,25 +73,22 @@ const ForgotPasswordScreen: React.FC = () => {
       showModal(t('Error'), t('Please enter a valid email address'), 'error');
       return;
     }
-    
-    // Check if email exists in our system
-    const emailExists = accounts.some(account => account.email.toLowerCase() === email.toLowerCase());
-    if (!emailExists) {
-      showModal(t('Error'), t('Email not found in our system'), 'error');
-      return;
-    }
-    
+    const otp ='123456';
     try {
       setIsLoading(true);
       
-      // In a real app, this would be an API call to your password reset endpoint
-      // For this example, we'll simulate a successful request after a short delay
-      setTimeout(() => {
+      // Call the API to request password reset
+      const result = await requestPasswordReset(email, otp);
+      
+      if (result.success) {
         setIsLoading(false);
         
         // Navigate to OTP verification screen with the email
         navigation.navigate('OTPVerification', { email });
-      }, 1500);
+      } else {
+        setIsLoading(false);
+        showModal(t('Error'), result.message || t('Password reset request failed. Please try again.'), 'error');
+      }
     } catch (error) {
       setIsLoading(false);
       showModal(t('Error'), t('Password reset request failed. Please try again.'), 'error');

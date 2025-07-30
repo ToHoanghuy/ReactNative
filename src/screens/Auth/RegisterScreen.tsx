@@ -45,6 +45,7 @@ const RegisterScreen: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [secondaryEmail, setSecondaryEmail] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [address, setAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -83,6 +84,7 @@ const RegisterScreen: React.FC = () => {
     if (data.phone) setPhone(data.phone);
     if (data.secondaryEmail) setSecondaryEmail(data.secondaryEmail);
     if (data.referralCode) setReferralCode(data.referralCode);
+    if (data.address) setAddress(data.address);
   }, []);
 
   const formData = {
@@ -92,7 +94,8 @@ const RegisterScreen: React.FC = () => {
     confirmPassword,
     phone,
     secondaryEmail,
-    referralCode
+    referralCode,
+    address
   };
 
   const { clearForm } = usePersistentForm({
@@ -166,7 +169,10 @@ const RegisterScreen: React.FC = () => {
         email: email.toLowerCase(),
         password: password,
         username: name,
-        phone: phone
+        phone: phone,
+        optionEmail: secondaryEmail || undefined,
+        invitationCode: referralCode || undefined,
+        address: address || undefined
       });
       
       if (result.success) {
