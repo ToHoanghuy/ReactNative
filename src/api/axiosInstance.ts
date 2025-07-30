@@ -58,15 +58,18 @@ const setupTokenRefreshTimer = async () => {
         clientId: 'web-app-v1'
       });
       
-      if (response.success && response.data.accessToken) {
-        const newToken = response.data.accessToken;
+      console.log('Automatic token refresh response:', response);
+      
+      if (response.success && (response.data.accessToken || response.data.access_token)) {
+        const newToken = response.data.accessToken || response.data.access_token;
         
         // Save the new token
         await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, newToken);
         
         // If refresh token also returned, update it
-        if (response.data.refreshToken) {
-          await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.data.refreshToken);
+        if (response.data.refreshToken || response.data.refresh_token) {
+          const newRefreshToken = response.data.refreshToken || response.data.refresh_token;
+          await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
         }
         
         // Emit silent refresh event (no modal needed for automatic refresh)
@@ -182,15 +185,18 @@ axiosInstance.interceptors.response.use(
             clientId: 'web-app-v1' 
           });
           
-          if (response.success && response.data.accessToken) {
-            const newToken = response.data.accessToken;
+          console.log('Token refresh response in interceptor:', response);
+          
+          if (response.success && (response.data.accessToken || response.data.access_token)) {
+            const newToken = response.data.accessToken || response.data.access_token;
             
             // Save the new token
             await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, newToken);
             
             // If refresh token also returned, update it
-            if (response.data.refreshToken) {
-              await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.data.refreshToken);
+            if (response.data.refreshToken || response.data.refresh_token) {
+              const newRefreshToken = response.data.refreshToken || response.data.refresh_token;
+              await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
             }
             
             // Set up automatic token refresh timer

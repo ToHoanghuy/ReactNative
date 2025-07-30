@@ -64,10 +64,11 @@ const LoginScreen: React.FC = () => {
 
   const handleLogin = async () => {
     // Reset any previous loading state
-    setIsLoading(false);
+    setIsLoading(true);
     
     // Form validation - improved with detailed error messages
     if (!email.trim()) {
+      setIsLoading(false);
       showModal(t('Error'), t('Email không được để trống'), 'error');
       return;
     }
@@ -75,17 +76,20 @@ const LoginScreen: React.FC = () => {
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
+      setIsLoading(false);
       showModal(t('Error'), t('Email không đúng định dạng'), 'error');
       return;
     }
     
     if (!password.trim()) {
+      setIsLoading(false);
       showModal(t('Error'), t('Mật khẩu không được để trống'), 'error');
       return;
     }
     
     // Password length validation
     if (password.trim().length < 6) {
+      setIsLoading(false);
       showModal(t('Error'), t('Mật khẩu phải có ít nhất 6 ký tự'), 'error');
       return;
     }
@@ -101,10 +105,8 @@ const LoginScreen: React.FC = () => {
         setIsLoading(false);
       } else {
         // Login failed - show error message
-        setTimeout(() => {
-          setIsLoading(false);
-          showModal(t('Error'), t(result.error || 'Đăng nhập thất bại. Vui lòng thử lại.'), 'error');
-        }, 1000);
+        setIsLoading(false);
+        showModal(t('Error'), t(result.error || 'Đăng nhập thất bại. Vui lòng thử lại.'), 'error');
       }
     } catch (error) {
       setIsLoading(false);

@@ -5,6 +5,7 @@ import { login as loginAction, logout as logoutAction, updateUser as updateUserA
 import { saveAuthData, clearAuthData, STORAGE_KEYS } from '../utils/storage';
 import * as authApi from '../api/authApi';
 import { setupTokenRefreshTimer, clearTokenRefreshTimer } from '../api/axiosInstance';
+import { isTokenExpired, refreshTokenIfNeeded } from '../utils/tokenUtils';
 
 export const useAuth = () => {
   const dispatch = useDispatch();
@@ -156,48 +157,43 @@ export const useAuth = () => {
     setupTokenRefreshTimer();
   };
   
-  // New function to refresh token by calling the API
+  
+  // Use the centralized refreshToken function from tokenUtils.ts
   const refreshToken = async () => {
     try {
-      // Get the current refresh token from Redux state or AsyncStorage
-      const currentRefreshToken = authState.refreshToken || await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+      const result = await refreshTokenIfNeeded();
       
-      if (!currentRefreshToken) {
-        console.error('No refresh token available');
-        return { success: false, error: 'No refresh token available' };
-      }
-      
-      // Generate a client ID (device identifier)
-      const clientId = 'web-app-v1';
-      
-      // Call the API to refresh token
-      const response = await authApi.refreshAccessToken({ refreshToken: currentRefreshToken, clientId });
-      
-      // Check if response is successful
-      if (response.success && response.data.accessToken) {
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
-        
-        // Update Redux store with new access token
-        await handleRefreshToken(accessToken);
-        
-        // If a new refresh token is provided, update it too
-        if (newRefreshToken) {
-          await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+      if (result.success) {
+        // Get the updated token
+        const newToken = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+        if (newToken) {
+          // Update Redux store with new access token
+          await handleRefreshToken(newToken);
         }
         
-        return { success: true, data: { accessToken, refreshToken: newRefreshToken } };
+        return { success: true, data: { accessToken: newToken } };
       } else {
-        throw new Error(response.data?.message || 'Token refresh failed');
+        // If token refresh failed with an expired token error, the tokenUtils already
+        // showed the session expired modal and triggered logout events
+        
+        // Only if tokenUtils didn't handle the logout, we do it here
+        if (result.message !== "Invalid or expired refresh token") {
+          await handleLogout();
+        }
+        
+        return { success: false, error: result.message || 'Token refresh failed' };
       }
     } catch (error: any) {
-      console.error('Token refresh error:', error);
+      console.error('Token refresh error in useAuth:', error);
       
-      // If refresh token fails, logout the user
+      // Logout the user
       await handleLogout();
       
       return { success: false, error: error.message || 'An unknown error occurred' };
     }
-  };  const handleLogout = async () => {
+  };
+
+  const handleLogout = async () => {
     // Clear token refresh timer
     clearTokenRefreshTimer();
     
@@ -271,5 +267,45 @@ export const useAuth = () => {
     refreshToken,
     handleRefreshToken,
     isAuthenticated: authState.isLoggedIn && !!authState.token,
+    refreshTokenIfNeeded: async () => refreshTokenIfNeeded(),
+    isTokenExpired: async () => isTokenExpired(),
+    checkTokenOnStartup: async () => {
+      // Check if there's a token in storage
+      const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      if (!token) return false;
+      
+      // Check if token is expired
+      const expired = await isTokenExpired();
+      if (!expired) return true; // Token is still valid
+      
+      // Try to refresh the token
+      console.log('Token expired on app startup, attempting to refresh');
+      const result = await refreshTokenIfNeeded();
+      
+      if (result.success) {
+        // Get user data from storage to update Redux state
+        const userStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_INFO);
+        const profileStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+        const newToken = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+        const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+        
+        if (userStr && newToken) {
+          const user = JSON.parse(userStr);
+          const profile = profileStr ? JSON.parse(profileStr) : null;
+          
+          // Update Redux store
+          dispatch(loginAction({ 
+            token: newToken, 
+            refreshToken: refreshToken || '', 
+            user, 
+            profile 
+          }));
+          
+          return true;
+        }
+      }
+      
+      return false;
+    }
   };
 };

@@ -8,8 +8,10 @@ import { LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EventRegister } from 'react-native-event-listeners';
 import TokenRefreshModal from './src/components/TokenRefreshModal';
+import SessionExpiredModal from './src/components/SessionExpiredModal';
 import { STORAGE_KEYS } from './src/utils/storage';
 import { setupTokenRefreshTimer } from './src/api/axiosInstance';
+import { refreshTokenIfNeeded } from './src/utils/tokenUtils';
 
 if (__DEV__) require('react-native-devsettings');
 // Ignore specific warnings
@@ -36,12 +38,53 @@ const App: React.FC = () => {
     
     // Initialize the token refresh timer if a token exists
     const initializeTokenRefresh = async () => {
-      const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-      const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-      
-      if (token && refreshToken) {
-        console.log('Initializing token refresh timer');
-        setupTokenRefreshTimer();
+      try {
+        console.log('Checking token status on app start');
+        
+        // Get token utility functions without using hooks
+        const tokenUtils = require('./src/utils/tokenUtils');
+        
+        // Check if there's a token in storage
+        const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+        if (!token) {
+          console.log('No token found, skipping refresh');
+          return;
+        }
+        
+        // Check if token is expired
+        const expired = await tokenUtils.isTokenExpired();
+        if (!expired) {
+          console.log('Token is still valid, setting up refresh timer');
+          setupTokenRefreshTimer();
+          return;
+        }
+        
+        // Token is expired, try to refresh
+        console.log('Token expired on app startup, attempting to refresh');
+        const result = await tokenUtils.refreshTokenIfNeeded();
+        
+        if (result.success) {
+          console.log('Token successfully refreshed on app start');
+          
+          // Get user data from storage to update Redux store
+          const userStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_INFO);
+          const profileStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+          const newToken = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+          const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+          
+          if (userStr && newToken) {
+            // Redux store will be updated by DataProvider component
+            console.log('User data restored after token refresh');
+          }
+        } else {
+          console.log('Token refresh failed on app start:', result.message);
+          // Show session expired modal or handle in the DataProvider
+          if (result.message === "Invalid or expired refresh token") {
+            EventRegister.emit('SESSION_EXPIRED', { message: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.' });
+          }
+        }
+      } catch (error) {
+        console.error('Error during app initialization token refresh:', error);
       }
     };
     
@@ -76,6 +119,7 @@ const App: React.FC = () => {
         >
           <RootNavigator />
           <TokenRefreshModal />
+          <SessionExpiredModal />
         </NavigationContainer>
       </DataProvider>
     </Provider>

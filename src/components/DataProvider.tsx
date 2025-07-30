@@ -5,6 +5,7 @@ import { setUserProfile } from '../redux/slices/userSlice';
 import { setAccounts } from '../redux/slices/accountsSlice';
 import { setPackages } from '../redux/slices/packagesSlice';
 import { getHistoryData } from '../utils/storage';
+import { refreshTokenIfNeeded } from '../utils/tokenUtils';
 
 // Sample data provider component
 const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -12,6 +13,14 @@ const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     const initializeData = async () => {
+      try {
+        // Check if token is expired and needs refreshing
+        console.log('Checking if token needs refreshing in DataProvider');
+        await refreshTokenIfNeeded();
+      } catch (error) {
+        console.error('Error refreshing token in DataProvider:', error);
+      }
+      
       // Load existing history data first
       const existingHistoryData = await getHistoryData();
       

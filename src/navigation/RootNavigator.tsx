@@ -11,6 +11,7 @@ import { getAuthData } from '../utils/storage';
 import SplashScreen from '../components/SplashScreen';
 import { AppState, Platform } from 'react-native';
 import { clearNavigationStates } from '../utils/asyncStorageSetup';
+import { refreshTokenIfNeeded } from '../utils/tokenUtils';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -26,6 +27,11 @@ const RootNavigator: React.FC = () => {
       try {
         // Clear navigation states to prevent issues with hot reload
         await clearNavigationStates();
+        
+        // Check if token needs to be refreshed
+        console.log('Checking if token needs refreshing in RootNavigator');
+        const refreshResult = await refreshTokenIfNeeded();
+        console.log('Token refresh result in RootNavigator:', refreshResult);
         
         const authData = await getAuthData();
         
@@ -77,7 +83,7 @@ const RootNavigator: React.FC = () => {
       </Stack.Navigator>
       
       {/* SplashScreen as overlay when loading */}
-      {isLoading && <SplashScreen isLoading={isLoading} />}
+      {/* {isLoading && <SplashScreen isLoading={isLoading} />} */}
     </>
   );
 };
