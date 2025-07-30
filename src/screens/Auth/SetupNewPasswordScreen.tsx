@@ -19,7 +19,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import Modal from '../../components/Modal';
 import SplashScreen from '../../components/SplashScreen';
-import { resetPassword } from '../../api/passwordResetApi';
+import { resetPassword } from '../../api/authApi';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, 'SetupNewPassword'>;
@@ -99,8 +99,7 @@ const SetupNewPasswordScreen: React.FC<Props> = ({ route }) => {
       // Call the API to reset the password
       const result = await resetPassword({
         email,
-        otp,
-        newPassword
+        password : newPassword,
       });
       
       setIsLoading(false);
@@ -130,9 +129,6 @@ const SetupNewPasswordScreen: React.FC<Props> = ({ route }) => {
       console.error('Password reset error:', error);
       showModal(t('Error'), t('Failed to reset password. Please try again.'), 'error');
     }
-  
-      // Show success message
-
   };
   
   return (

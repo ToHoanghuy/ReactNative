@@ -21,6 +21,7 @@ import { useAppSelector } from '../../hooks/redux';
 import Svg, { Circle } from 'react-native-svg';
 import { useFaceDetector, Face, FaceDetectionOptions, } from 'react-native-vision-camera-face-detector';
 import { Worklets } from "react-native-worklets-core";
+import { updateHealthData, HealthData } from '../../api/healthDataApi';
 const Icon = require('react-native-vector-icons/Feather').default;
 const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
 import Animated, { 
@@ -126,12 +127,6 @@ const ScanScreen: React.FC = () => {
   
   const detectFacesJs = Worklets.createRunOnJS(useFaceDetector(faceDetectionOptions).detectFaces);
   const handleDetectedFacesJs = Worklets.createRunOnJS(handleDetectedFaces);
-  // Frame processor for face detection
-  // const frameProcessor = useFrameProcessor((frame) => {
-  //   'worklet';
-  //   const faces = detectFaces(frame);
-  //   runOnJS(setDetectedFaces)(faces);
-  // }, [detectFaces]);
 
     const frameProcessor = useFrameProcessor((frame) => {
       'worklet'
@@ -421,24 +416,61 @@ const ScanScreen: React.FC = () => {
       // Close camera
       setShowCamera(false);
       
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       // Generate unique ID using nanoid
       const _id = nanoid();
       
-      // Simulate face scanning result with more detailed health data
+      // Create mock health data to simulate scan result
+      // In a real app, this would come from processing the face scan
+      const mockHealthData: HealthData = {
+        ascvdRisk: { type: 33554432, value: 1 },
+        bpValue: { diastolic: 75, systolic: 118 },
+        heartAge: { type: 268435456, value: 26 },
+        hemoglobin: { type: 1048576, value: 10.5 },
+        hemoglobinA1c: { type: 2097152, value: 5.64 },
+        highBloodPressureRisk: { type: 16777216, value: 1 },
+        highFastingGlucoseRisk: { type: 8589934592, value: 3 },
+        highHemoglobinA1cRisk: { type: 8388608, value: 1 },
+        highTotalCholesterolRisk: { type: 536870912, value: 3 },
+        lfhf: { type: 524288, value: 0.261 },
+        lowHemoglobinRisk: { type: 17179869184, value: 3 },
+        meanRRi: { confidence: { level: 2 }, type: 256, value: 923 },
+        normalizedStressIndex: { type: 67108864, value: 15 },
+        oxygenSaturation: { type: 4, value: 97 },
+        pnsIndex: { type: 8192, value: 4.6 },
+        pnsZone: { type: 16384, value: 3 },
+        prq: { confidence: { level: 2 }, type: 4096, value: 3.4 },
+        pulseRate: { confidence: { level: 3 }, type: 1, value: 64 },
+        respirationRate: { confidence: { level: 2 }, type: 2, value: 19 },
+        rmssd: { type: 512, value: 145 },
+        rri: { confidence: { level: 2 }, type: 32, value: [] },
+        sd1: { type: 1024, value: 143 },
+        sd2: { type: 2048, value: 154 },
+        sdnn: { confidence: { level: 2 }, type: 8, value: 148 },
+        snsIndex: { type: 32768, value: -1.1 },
+        snsZone: { type: 65536, value: 1 },
+        stressIndex: { type: 128, value: 22 },
+        stressLevel: { type: 16, value: 1 },
+        wellnessIndex: { type: 131072, value: 8 },
+        wellnessLevel: { type: 262144, value: 3 }
+      };
+      
+      // Send health data to API
+      console.log('Sending health data to API...');
+      const apiResponse = await updateHealthData(mockHealthData);
+      console.log('API response:', apiResponse);
+      
+      // Create a mock result for the UI based on the health data
       const mockResult = {
         id: _id,
         date: new Date().toISOString(),
         faceId: `FACE_${Math.random().toString(36).substr(2, 9)}`,
-        result: Math.random() > 0.3 ? 'success' : 'failed' as 'success' | 'failed',
+        result: apiResponse.success ? 'success' : 'failed' as 'success' | 'failed',
         confidence: Math.random() * 0.4 + 0.6, // 0.6 to 1.0
-        wellnessScore: Math.floor(Math.random() * 3) + 7, // 7-10
-        heartRate: Math.floor(Math.random() * 30) + 60, // 60-90
-        breathingRate: Math.floor(Math.random() * 6) + 12, // 12-18
-        bloodPressure: `${Math.floor(Math.random() * 20) + 110}/${Math.floor(Math.random() * 15) + 70}`,
-        oxygenSaturation: Math.floor(Math.random() * 5) + 95, // 95-100
+        wellnessScore: mockHealthData.wellnessIndex?.value || Math.floor(Math.random() * 3) + 7,
+        heartRate: mockHealthData.pulseRate?.value || Math.floor(Math.random() * 30) + 60,
+        breathingRate: mockHealthData.respirationRate?.value || Math.floor(Math.random() * 6) + 12,
+        bloodPressure: `${mockHealthData.bpValue?.systolic || 120}/${mockHealthData.bpValue?.diastolic || 80}`,
+        oxygenSaturation: mockHealthData.oxygenSaturation?.value || Math.floor(Math.random() * 5) + 95,
       };
 
       setIsScanning(false);

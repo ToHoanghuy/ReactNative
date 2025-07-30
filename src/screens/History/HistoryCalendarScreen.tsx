@@ -6,16 +6,18 @@ import {
   TouchableOpacity,
   FlatList,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { HistoryStackParamList } from '../../types/navigation';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '../../hooks/redux';
+import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
-import { HistoryItem } from '../../redux/slices/historySlice';
+import { HistoryItem, addHistoryItem } from '../../redux/slices/historySlice';
 import SplashScreen from '../../components/SplashScreen';
+import { getHealthDataByDate } from '../../api/healthDataApi';
 const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
 
 type NavigationProp = StackNavigationProp<HistoryStackParamList, 'HistoryCalendar'>;
@@ -23,6 +25,7 @@ type NavigationProp = StackNavigationProp<HistoryStackParamList, 'HistoryCalenda
 const HistoryCalendarScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const { items } = useAppSelector((state: RootState) => state.history);
   
   // Loading state
@@ -37,6 +40,11 @@ const HistoryCalendarScreen: React.FC = () => {
     const itemDate = new Date(item.date).toISOString().split('T')[0];
     return itemDate === selectedDate;
   });
+
+  // Fetch data for initial date when component mounts
+  useEffect(() => {
+    fetchHealthDataForDate(today);
+  }, []);
 
   // Create marked dates object with scan data
   const markedDates = items.reduce((acc, item) => {
@@ -61,14 +69,102 @@ const HistoryCalendarScreen: React.FC = () => {
     };
   }
 
+  // Function to fetch health data for the selected date
+  const fetchHealthDataForDate = async (dateString: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Format date for API: DD-MM-YYYY
+      const apiDate = formatDateForApi(dateString);
+      console.log('Fetching health data for date:', apiDate);
+      
+      const response = await getHealthDataByDate(apiDate);
+      
+      if (response.success && response.data) {
+        console.log('Health data fetched successfully:', response.data);
+        
+        // Convert API response to HistoryItem format
+        const newItem: HistoryItem = convertApiDataToHistoryItem(response.data, dateString);
+        
+        // Add to Redux store if it doesn't already exist
+        const exists = items.some(item => item.id === newItem.id);
+        if (!exists) {
+          dispatch(addHistoryItem(newItem));
+        }
+      } else {
+        console.log('No health data available for selected date:', response.message);
+      }
+    } catch (error) {
+      console.error('Error fetching health data:', error);
+      Alert.alert(
+        t('Error'),
+        t('Failed to fetch health data. Please try again later.')
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Format date from YYYY-MM-DD to DD-MM-YYYY for API
+  const formatDateForApi = (dateString: string): string => {
+    const [year, month, day] = dateString.split('-');
+    return `${day}-${month}-${year}`;
+  };
+  
+  // Convert API response to HistoryItem format
+  const convertApiDataToHistoryItem = (apiData: any, dateString: string): HistoryItem => {
+    // Generate a unique ID based on date and time
+    const id = apiData._id || `health-data-${Date.now()}`;
+    
+    // Extract values from API response
+    const wellnessScore = apiData.wellnessIndex?.value || 8;
+    const heartRate = apiData.pulseRate?.value || 64;
+    const breathingRate = apiData.respirationRate?.value || 19;
+    const stressLevel = apiData.stressLevel?.value || 1;
+    const heartRateVariability = apiData.sdnn?.value || 148;
+    const oxygenSaturation = apiData.oxygenSaturation?.value || 97;
+    
+    // Map stress level value to category
+    const stressCategory = mapStressLevelToCategory(stressLevel);
+    
+    return {
+      id,
+      date: apiData.createdAt || new Date(dateString).toISOString(),
+      faceId: `face-${Date.now()}`, // Default value since this is required
+      result: 'success', // Default value since this is required
+      confidence: 0.9, // Default value since this is required
+      wellnessScore,
+      heartRate,
+      heartRateUnit: 'bpm',
+      breathingRate,
+      breathingRateUnit: t('breaths/min'),
+      stressLevel,
+      stressCategory,
+      heartRateVariability,
+      hrvUnit: 'ms',
+      oxygenSaturation,
+      oxygenSaturationUnit: '%',
+    };
+  };
+  
+  // Map stress level value to category
+  const mapStressLevelToCategory = (level: number): string => {
+    switch (level) {
+      case 1: return t('Low');
+      case 2: return t('Normal');
+      case 3: return t('Moderate');
+      case 4: return t('High');
+      case 5: return t('Very High');
+      default: return t('Normal');
+    }
+  };
+
   const onDayPress = (day: any) => {
     setIsLoading(true);
+    setSelectedDate(day.dateString);
     
-    // Simulate loading delay
-    setTimeout(() => {
-      setSelectedDate(day.dateString);
-      setIsLoading(false);
-    }, 800);
+    // Fetch health data for the selected date
+    fetchHealthDataForDate(day.dateString);
   };
 
   // Helper function to determine color based on wellness score
@@ -79,7 +175,14 @@ const HistoryCalendarScreen: React.FC = () => {
   };
 
   const renderHistoryItem = ({ item }: { item: HistoryItem }) => (
-    <View style={[styles.historyItem, { borderLeftColor: getScoreColor(item.wellnessScore || 8) }]}>
+    <TouchableOpacity
+    onPress={() => {
+        console.log('Navigating to result detail with item:', item);
+        navigation.navigate('ResultDetail', {
+          scanResult: item
+        });
+      }}
+     style={[styles.historyItem, { borderLeftColor: getScoreColor(item.wellnessScore || 8) }]}>
       <View style={styles.itemHeader}>
         <View style={styles.scoreContainer}>
           <Text style={styles.cardTitle}>{t('Wellness Score')}</Text>
@@ -146,7 +249,7 @@ const HistoryCalendarScreen: React.FC = () => {
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (

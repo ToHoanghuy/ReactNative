@@ -20,7 +20,7 @@ const initialState: UserState = {
     id: '',
     name: '',
     email: '',
-    language: 'vi' as 'en' | 'vn',
+    language: 'vn' as 'en' | 'vn',
     emailNotificationsEnabled: false,
   },
   isLoading: false,

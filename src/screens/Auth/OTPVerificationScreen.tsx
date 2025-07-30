@@ -17,7 +17,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../types/navigation';
 import Modal from '../../components/Modal';
 import SplashScreen from '../../components/SplashScreen';
-import { requestPasswordReset, verifyOtpForPasswordReset } from '../../api/passwordResetApi';
+import { verifyOtpForPasswordReset, resendOtp } from '../../api/authApi';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, 'OTPVerification'>;
@@ -104,10 +104,10 @@ const OTPVerificationScreen: React.FC<Props> = ({ route }) => {
     // Reset the timer and resend state
     setTimeLeft(60);
     setCanResend(false);
-    const otp='123456';
+    
     try {
       // Call the API to resend OTP
-      const result = await requestPasswordReset(email, otp);
+      const result = await resendOtp(email);
       
       if (result.success) {
         showModal(t('Success'), t('A new OTP has been sent to your email'), 'success');

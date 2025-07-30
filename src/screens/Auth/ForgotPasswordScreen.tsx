@@ -21,7 +21,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import Modal from '../../components/Modal';
 import SplashScreen from '../../components/SplashScreen';
-import { requestPasswordReset } from '../../api/passwordResetApi';
+import { requestPasswordReset, resendOtp } from '../../api/authApi';
 const Icon = require('react-native-vector-icons/Feather').default;
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
@@ -73,12 +73,12 @@ const ForgotPasswordScreen: React.FC = () => {
       showModal(t('Error'), t('Please enter a valid email address'), 'error');
       return;
     }
-    const otp ='123456';
+    
     try {
       setIsLoading(true);
       
       // Call the API to request password reset
-      const result = await requestPasswordReset(email, otp);
+      const result = await resendOtp(email);
       
       if (result.success) {
         setIsLoading(false);
