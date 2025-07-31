@@ -9,21 +9,23 @@ import {
   Alert,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { HistoryStackParamList } from '../../types/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { RootState } from '../../redux/store';
-import { HistoryItem, addHistoryItem } from '../../redux/slices/historySlice';
+import { HistoryItem, ScanItem, addScanToDate } from '../../redux/slices/historySlice';
 import SplashScreen from '../../components/SplashScreen';
-import { getHealthDataByDate } from '../../api/healthDataApi';
+import { getHealthDataByDate, getHealthDataByRange } from '../../api/healthDataApi';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
 
 type NavigationProp = StackNavigationProp<HistoryStackParamList, 'HistoryCalendar'>;
+type RouteProps = RouteProp<HistoryStackParamList, 'HistoryCalendar'>;
 
 const HistoryCalendarScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProps>();
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { items } = useAppSelector((state: RootState) => state.history);
@@ -33,22 +35,26 @@ const HistoryCalendarScreen: React.FC = () => {
   
   // Set today's date as default
   const today = new Date().toISOString().split('T')[0];
-  const [selectedDate, setSelectedDate] = useState<string>(today);
+  const initialDate = route.params?.initialDate || today;
+  const [selectedDate, setSelectedDate] = useState<string>(initialDate);
+  const [currentMonth, setCurrentMonth] = useState<string>(initialDate.substring(0, 7)); // YYYY-MM format
   
   // Filter items for selected date
-  const filteredItems = items.filter(item => {
-    const itemDate = new Date(item.date).toISOString().split('T')[0];
-    return itemDate === selectedDate;
-  });
-
+  
+  const selectedDateItem = items.find(item => item._id === selectedDate);
+  const count = selectedDateItem?.count || 0;
+  // If count is 0, return empty array regardless of data that might exist
+  const filteredScans = (selectedDateItem && count > 0) ? selectedDateItem.data : [];
+  
   // Fetch data for initial date when component mounts
   useEffect(() => {
-    fetchHealthDataForDate(today);
+    // No need to fetch data on mount - we'll use what's already in the Redux store
+    // This prevents the issue of overwriting data for dates other than today
   }, []);
 
   // Create marked dates object with scan data
   const markedDates = items.reduce((acc, item) => {
-    const itemDate = new Date(item.date).toISOString().split('T')[0];
+    const itemDate = item._id; // Already in YYYY-MM-DD format
     if (!acc[itemDate]) {
       acc[itemDate] = {
         marked: true,
@@ -78,21 +84,56 @@ const HistoryCalendarScreen: React.FC = () => {
       const apiDate = formatDateForApi(dateString);
       console.log('Fetching health data for date:', apiDate);
       
+      // Save the original selected date before API call
+      const originalSelectedDate = dateString; // YYYY-MM-DD format
+      
       const response = await getHealthDataByDate(apiDate);
       
       if (response.success && response.data) {
         console.log('Health data fetched successfully:', response.data);
         
-        // Convert API response to HistoryItem format
-        const newItem: HistoryItem = convertApiDataToHistoryItem(response.data, dateString);
+        // Check if response.data is a single object or has a data array
+        let dataToProcess = response.data;
         
-        // Add to Redux store if it doesn't already exist
-        const exists = items.some(item => item.id === newItem.id);
-        if (!exists) {
-          dispatch(addHistoryItem(newItem));
+        // Handle case where API returns { data: [...] } format
+        if (response.data.data && Array.isArray(response.data.data)) {
+          dataToProcess = response.data.data;
+        }
+        
+        // Process the data based on structure
+        if (Array.isArray(dataToProcess)) {
+          // Convert all scan items
+          if (dataToProcess.length > 0) {
+            // Convert each scan to ScanItem format - use the original selected date
+            const scanItems: ScanItem[] = dataToProcess.map(scan => 
+              convertApiDataToScanItem(scan, originalSelectedDate)
+            );
+            
+            // Add all scans to the date - use the original selected date as dateId
+            dispatch(addScanToDate({
+              dateId: originalSelectedDate,
+              scans: scanItems
+            }));
+          }
+        } else {
+          // Assume it's a single health data object
+          const newScanItem: ScanItem = convertApiDataToScanItem(dataToProcess, originalSelectedDate);
+          
+          // Add single scan to the date - use the original selected date as dateId
+          dispatch(addScanToDate({
+            dateId: originalSelectedDate,
+            scans: [newScanItem]
+          }));
         }
       } else {
         console.log('No health data available for selected date:', response.message);
+        
+        // Even if there's no data, add an empty entry for this date to ensure it's tracked in the Redux store
+        // This prevents data from other dates from appearing when this date is selected
+        dispatch(addScanToDate({
+          dateId: dateString,
+          scans: []
+        }));
       }
     } catch (error) {
       console.error('Error fetching health data:', error);
@@ -105,32 +146,82 @@ const HistoryCalendarScreen: React.FC = () => {
     }
   };
   
+  // We've removed the fetchHealthDataForMonth function since we're only fetching data on date selection now
+  
+  // Handle month change in calendar
+  const onMonthChange = (month: any) => {
+    const newMonth = month.dateString.substring(0, 7); // YYYY-MM format
+    if (newMonth !== currentMonth) {
+      setCurrentMonth(newMonth);
+      // No longer fetching data for the entire month
+      console.log('Month changed to:', newMonth);
+    }
+  };
+  
   // Format date from YYYY-MM-DD to DD-MM-YYYY for API
   const formatDateForApi = (dateString: string): string => {
     const [year, month, day] = dateString.split('-');
     return `${day}-${month}-${year}`;
   };
   
-  // Convert API response to HistoryItem format
-  const convertApiDataToHistoryItem = (apiData: any, dateString: string): HistoryItem => {
-    // Generate a unique ID based on date and time
-    const id = apiData._id || `health-data-${Date.now()}`;
+  // Convert API response to ScanItem format
+  const convertApiDataToScanItem = (apiData: any, dateString: string): ScanItem => {
+    // Safety check for null or undefined apiData
+    if (!apiData) {
+      console.warn('Received null or undefined apiData');
+      return {
+        id: `health-data-${dateString}-${Date.now()}`,
+        createdAt: new Date(dateString).toISOString(),
+        faceId: `face-${dateString.replace(/-/g, '')}`,
+        result: 'success',
+        confidence: 0.9,
+        wellnessScore: 0,
+        heartRate: 0,
+        heartRateUnit: 'bpm',
+        breathingRate: 0,
+        breathingRateUnit: t('breaths/min'),
+        stressLevel: 0,
+        stressCategory: t('Normal'),
+        heartRateVariability: 0,
+        hrvUnit: 'ms',
+        oxygenSaturation: 0,
+        oxygenSaturationUnit: '%',
+      };
+    }
     
-    // Extract values from API response
-    const wellnessScore = apiData.wellnessIndex?.value || 8;
-    const heartRate = apiData.pulseRate?.value || 64;
-    const breathingRate = apiData.respirationRate?.value || 19;
-    const stressLevel = apiData.stressLevel?.value || 1;
-    const heartRateVariability = apiData.sdnn?.value || 148;
-    const oxygenSaturation = apiData.oxygenSaturation?.value || 97;
+    // Generate a consistent ID based on date and any unique identifier in the data
+    const id = apiData._id || apiData.id || `health-data-${dateString}-${Date.now()}`;
+    
+    // Extract values from API response with default values of 0
+    // Check if the wellnessIndex is in the direct object or nested in healthData
+    const wellnessScore = apiData.wellnessIndex?.value || 
+                         apiData.healthData?.wellnessIndex?.value || 0;
+    
+    const heartRate = apiData.pulseRate?.value || 
+                     apiData.healthData?.pulseRate?.value || 0;
+    
+    const breathingRate = apiData.respirationRate?.value || 
+                         apiData.healthData?.respirationRate?.value || 0;
+    
+    const stressLevel = apiData.stressLevel?.value || 
+                       apiData.healthData?.stressLevel?.value || 0;
+    
+    const heartRateVariability = apiData.sdnn?.value || 
+                                apiData.healthData?.sdnn?.value || 0;
+    
+    const oxygenSaturation = apiData.oxygenSaturation?.value || 
+                            apiData.healthData?.oxygenSaturation?.value || 0;
     
     // Map stress level value to category
     const stressCategory = mapStressLevelToCategory(stressLevel);
     
+    // Use the provided createdAt timestamp or the date string - make sure we always use the original date
+    const createdAt = apiData.createdAt || new Date(dateString).toISOString();
+    
     return {
       id,
-      date: apiData.createdAt || new Date(dateString).toISOString(),
-      faceId: `face-${Date.now()}`, // Default value since this is required
+      createdAt,
+      faceId: `face-${dateString.replace(/-/g, '')}`, // Use consistent faceId based on date
       result: 'success', // Default value since this is required
       confidence: 0.9, // Default value since this is required
       wellnessScore,
@@ -163,9 +254,16 @@ const HistoryCalendarScreen: React.FC = () => {
     setIsLoading(true);
     setSelectedDate(day.dateString);
     
-    // Fetch health data for the selected date
-    fetchHealthDataForDate(day.dateString);
+    // No need to clear or fetch data - just use what's in Redux
+    // This prevents overwriting data between dates
+    
+    // Simulate loading delay for better UX
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 300);
   };
+  //   fetchHealthDataForDate(day.dateString);
+  // };
 
   // Helper function to determine color based on wellness score
   const getScoreColor = (score: number, opacity: number = 1): string => {
@@ -174,7 +272,7 @@ const HistoryCalendarScreen: React.FC = () => {
     return `rgba(244, 67, 54, ${opacity})`; // Red
   };
 
-  const renderHistoryItem = ({ item }: { item: HistoryItem }) => (
+  const renderScanItem = ({ item }: { item: ScanItem }) => (
     <TouchableOpacity
     onPress={() => {
         console.log('Navigating to result detail with item:', item);
@@ -191,8 +289,8 @@ const HistoryCalendarScreen: React.FC = () => {
           </View>
         </View>
         <View style={styles.dateTimeContainer}>
-          <Text style={styles.date}>{new Date(item.date).toLocaleDateString()}</Text>
-          <Text style={styles.time}>{new Date(item.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+          <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+          <Text style={styles.time}>{new Date(item.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
         </View>
       </View>
 
@@ -267,6 +365,7 @@ const HistoryCalendarScreen: React.FC = () => {
       
       <Calendar
         onDayPress={onDayPress}
+        onMonthChange={onMonthChange}
         markedDates={markedDates}
         theme={{
           backgroundColor: '#ffffff',
@@ -285,12 +384,13 @@ const HistoryCalendarScreen: React.FC = () => {
       <View style={styles.historySection}>
         <Text style={styles.sectionTitle}>
           {t('Scans for')} {new Date(selectedDate).toLocaleDateString()}
+          {selectedDateItem && selectedDateItem.count > 0 && ` (${selectedDateItem.count} ${t('scans')})`}
         </Text>
         
-        {filteredItems.length > 0 ? (
+        {filteredScans.length > 0 ? (
           <FlatList
-            data={filteredItems}
-            renderItem={renderHistoryItem}
+            data={filteredScans}
+            renderItem={renderScanItem}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
             // showsVerticalScrollIndicator={true}

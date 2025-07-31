@@ -78,8 +78,9 @@ const ResultDetailScreen: React.FC<Props> = () => {
     useEffect(() => {
         if (scanResult && scanResult.id) {
             const historyItem = {
+                _id: scanResult._id || scanResult.id || '', // fallback if _id is not present
                 id: scanResult.id,
-                date: scanResult.date,
+                createdAt: scanResult.createdAt,
                 faceId: scanResult.faceId,
                 result: scanResult.result,
                 confidence: scanResult.confidence,
@@ -94,6 +95,8 @@ const ResultDetailScreen: React.FC<Props> = () => {
                 oxygenSaturationUnit: '%',
                 stress: Math.floor(Math.random() * 30) + 20, // Mock data
                 stressUnit: '%',
+                count: scanResult.count || 1,
+                data: scanResult.data || {},
             };
 
             dispatch(addHistoryItem(historyItem));

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,17 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '../../hooks/redux';
+import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootState } from '../../redux/store';
-import { HistoryItem } from '../../redux/slices/historySlice';
+import { HistoryItem, ScanItem, setHistoryItems, setLoading } from '../../redux/slices/historySlice';
 import { HistoryStackParamList } from '../../types/navigation';
 import SplashScreen from '../../components/SplashScreen';
-// import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { getHealthDataByRange } from '../../api/healthDataApi';
 const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
 
 type NavigationProp = StackNavigationProp<HistoryStackParamList, 'HistoryList'>;
@@ -31,6 +32,7 @@ const getScoreColor = (score: number, opacity: number = 1): string => {
 const HistoryListScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const { items, isLoading } = useAppSelector((state: RootState) => state.history);
   
   // Pagination states
@@ -39,6 +41,125 @@ const HistoryListScreen: React.FC = () => {
   const [hasReachedEnd, setHasReachedEnd] = useState(false);
   
   const ITEMS_PER_PAGE = 10;
+  
+  // Fetch health data when component mounts
+  useEffect(() => {
+    fetchHealthDataForCurrentMonth();
+  }, []);
+
+  // Function to fetch health data for the current month
+  const fetchHealthDataForCurrentMonth = async () => {
+    try {
+      dispatch(setLoading(true));
+      
+      // Get current month in MM/YYYY format
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+      const monthYearString = `${month}/${year}`;
+      
+      console.log('Fetching health data for month:', monthYearString);
+      
+      const response = await getHealthDataByRange('month', monthYearString);
+      
+      if (response.success && response.data) {
+        console.log('Health data for month fetched successfully:', response.data);
+        
+        // Process the array of day objects
+        if (Array.isArray(response.data)) {
+          // Create properly structured history items
+          const historyItems: HistoryItem[] = response.data.map(dayObj => {
+            // Each day object has _id (date), count, and data array
+            const dayId = dayObj._id; // Format: "DD-MM-YYYY"
+            const dayCount = dayObj.count || 0;
+            
+            // Convert API date format (DD-MM-YYYY) to ISO date (YYYY-MM-DD)
+            const [dayPart, monthPart, yearPart] = dayId.split('-');
+            const isoDate = `${yearPart}-${monthPart}-${dayPart}`;
+            
+            // Process scan items from data array
+            const scanItems: ScanItem[] = Array.isArray(dayObj.data) ? 
+              dayObj.data.map((scan: any) => convertApiDataToScanItem(scan, isoDate)) : [];
+            
+            // Return structured HistoryItem with _id as the ISO date
+            return {
+              _id: isoDate,
+              count: dayCount,
+              data: scanItems
+            };
+          });
+          
+          // Sort history items by date (newest first)
+          historyItems.sort((a, b) => (a._id < b._id ? 1 : -1));
+          
+          // Update the entire history items list at once
+          dispatch(setHistoryItems(historyItems));
+        }
+      } else {
+        console.log('No health data available for month:', response.message);
+        Alert.alert(
+          t('Information'),
+          t('No health data available for this month.')
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching health data for month:', error);
+      Alert.alert(
+        t('Error'),
+        t('Failed to fetch health data. Please try again later.')
+      );
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+  
+  // Convert API response to ScanItem format
+  const convertApiDataToScanItem = (apiData: any, dateString: string): ScanItem => {
+    // Generate a consistent ID based on date and any unique identifier in the data
+    const id = apiData._id || apiData.id || `health-data-${dateString}-${Date.now()}`;
+    
+    // Extract values from API response with default values of 0
+    const wellnessScore = apiData.wellnessIndex?.value || 0;
+    const heartRate = apiData.pulseRate?.value || 0;
+    const breathingRate = apiData.respirationRate?.value || 0;
+    const stressLevel = apiData.stressLevel?.value || 0;
+    const heartRateVariability = apiData.sdnn?.value || 0;
+    const oxygenSaturation = apiData.oxygenSaturation?.value || 0;
+    
+    // Map stress level value to category
+    const stressCategory = mapStressLevelToCategory(stressLevel);
+    
+    return {
+      id,
+      createdAt: apiData.createdAt || new Date(dateString).toISOString(),
+      faceId: `face-${dateString.replace(/-/g, '')}`, // Consistent faceId based on date
+      result: 'success', // Default value since this is required
+      confidence: 0.9, // Default value since this is required
+      wellnessScore,
+      heartRate,
+      heartRateUnit: 'bpm',
+      breathingRate,
+      breathingRateUnit: t('breaths/min'),
+      stressLevel,
+      stressCategory,
+      heartRateVariability,
+      hrvUnit: 'ms',
+      oxygenSaturation,
+      oxygenSaturationUnit: '%',
+    };
+  };
+  
+  // Map stress level value to category
+  const mapStressLevelToCategory = (level: number): string => {
+    switch (level) {
+      case 1: return t('Low');
+      case 2: return t('Normal');
+      case 3: return t('Moderate');
+      case 4: return t('High');
+      case 5: return t('Very High');
+      default: return t('Normal');
+    }
+  };
   
   // Calculate displayed items based on current page
   const displayedItems = useMemo(() => {
@@ -68,11 +189,12 @@ const HistoryListScreen: React.FC = () => {
     }
   }, [loadingMore, hasReachedEnd, displayedItems.length, items.length]);
 
-  // Reset pagination when data changes
+  // Reset pagination and refresh data from API
   const handleRefresh = useCallback(() => {
     setPage(1);
     setHasReachedEnd(false);
     setLoadingMore(false);
+    fetchHealthDataForCurrentMonth();
   }, []);
 
   // Footer component for loading indicator
@@ -87,42 +209,79 @@ const HistoryListScreen: React.FC = () => {
     );
   };
 
-  const renderHistoryItem = ({ item }: { item: HistoryItem }) => (
-    <TouchableOpacity 
-      style={[styles.historyItem, { borderLeftColor: getScoreColor(item.wellnessScore || 8) }]}
-      onPress={() => {
-        console.log('Navigating to result detail with item:', item);
-        navigation.navigate('ResultDetail', {
-          scanResult: item
-        });
-      }}
-    >
-      <View style={styles.itemHeader}>
-        <View style={styles.scoreContainer}>
-          <Text style={styles.cardTitle}>{t('Wellness Score')}</Text>
-          <View style={[styles.scoreBadge, { backgroundColor: getScoreColor(item.wellnessScore || 8, 0.15) }]}>
-            <Text style={[styles.scoreText, { color: getScoreColor(item.wellnessScore || 8) }]}>{item.wellnessScore || 8}/10</Text>
-          </View>
-        </View>
-        <View style={styles.dateTimeContainer}>
-          <Text style={styles.date}>{new Date(item.date).toLocaleDateString()}</Text>
-          <Text style={styles.time}>{new Date(item.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
-        </View>
-      </View>
-
-      <View style={styles.healthMetrics}>
-        <View style={styles.metricRow}>
-          <View style={[styles.metricIcon, { backgroundColor: '#e6f7ff' }]}>
-            <MaterialCommunityIcons name="lungs" size={22} color="#0099cc" />
-          </View>
-          <View style={styles.metricContent}>
-            <Text style={styles.metricLabel}>{t('Breathing Rate')}</Text>
-            <View style={styles.metricValueContainer}>
-              <Text style={styles.metricValue}>{item.breathingRate || 14}</Text>
-              <Text style={styles.metricUnit}>{item.breathingRateUnit || t('minutes')}</Text>
+  const renderHistoryItem = ({ item }: { item: HistoryItem }) => {
+    // Get the most recent scan data for this day (last item in data array)
+    const scanData = item.data && item.data.length > 0 ? item.data[item.data.length - 1] : null;
+    
+    // Format the date from _id (which is in YYYY-MM-DD format)
+    const dateObj = new Date(item._id);
+    const formattedDate = dateObj.toLocaleDateString();
+    
+    // If we don't have scan data, just show the date
+    if (!scanData) {
+      return (
+        <TouchableOpacity style={[styles.historyItem, { borderLeftColor: '#ccc' }]}>
+          <View style={styles.itemHeader}>
+            <Text style={styles.cardTitle}>{t('No data')}</Text>
+            <View style={styles.dateTimeContainer}>
+              <Text style={styles.date}>{formattedDate}</Text>
+              <Text style={styles.time}>{t('Count')}: {item.count}</Text>
             </View>
           </View>
+        </TouchableOpacity>
+      );
+    }
+    
+    // With scan data, show full details
+    return (
+      <TouchableOpacity 
+        style={[styles.historyItem, { borderLeftColor: getScoreColor(scanData.wellnessScore || 0) }]}
+        onPress={() => {
+          // Navigate to calendar screen for this date to see all scans
+          if (item.count > 1) {
+            // Convert YYYY-MM-DD to ISO string format
+            const dateString = item._id;
+            navigation.navigate('HistoryCalendar', { initialDate: dateString });
+          } else {
+            // If only one scan, navigate directly to details
+            console.log('Navigating to result detail with item:', scanData);
+            navigation.navigate('ResultDetail', {
+              scanResult: scanData
+            });
+          }
+        }}
+      >
+        <View style={styles.itemHeader}>
+          <View style={styles.scoreContainer}>
+            <Text style={styles.cardTitle}>{t('Wellness Score')}</Text>
+            <View style={[styles.scoreBadge, { backgroundColor: getScoreColor(scanData.wellnessScore || 0, 0.15) }]}>
+              <Text style={[styles.scoreText, { color: getScoreColor(scanData.wellnessScore || 0) }]}>{scanData.wellnessScore || 0}/10</Text>
+            </View>
+          </View>
+          <View style={styles.dateTimeContainer}>
+            <Text style={styles.date}>{formattedDate}</Text>
+            <Text style={styles.time}>
+              {item.count > 1 ? 
+                `${item.count} ${t('scans')} ${t('(tap to view all)')}` : 
+                `${item.count} ${t('scan')}`
+              }
+            </Text>
+          </View>
         </View>
+
+        <View style={styles.healthMetrics}>
+          <View style={styles.metricRow}>
+            <View style={[styles.metricIcon, { backgroundColor: '#e6f7ff' }]}>
+              <MaterialCommunityIcons name="lungs" size={22} color="#0099cc" />
+            </View>
+            <View style={styles.metricContent}>
+              <Text style={styles.metricLabel}>{t('Breathing Rate')}</Text>
+              <View style={styles.metricValueContainer}>
+                <Text style={styles.metricValue}>{scanData.breathingRate || 0}</Text>
+                <Text style={styles.metricUnit}>{scanData.breathingRateUnit || t('minutes')}</Text>
+              </View>
+            </View>
+          </View>
 
         <View style={styles.metricRow}>
           <View style={[styles.metricIcon, { backgroundColor: '#ffe6e6' }]}>
@@ -131,8 +290,8 @@ const HistoryListScreen: React.FC = () => {
           <View style={styles.metricContent}>
             <Text style={styles.metricLabel}>{t('Heart Rate')}</Text>
             <View style={styles.metricValueContainer}>
-              <Text style={styles.metricValue}>{item.heartRate || 52}</Text>
-              <Text style={styles.metricUnit}>{item.heartRateUnit || 'bpm'}</Text>
+              <Text style={styles.metricValue}>{scanData.heartRate || 0}</Text>
+              <Text style={styles.metricUnit}>{scanData.heartRateUnit || 'bpm'}</Text>
             </View>
           </View>
         </View>
@@ -144,8 +303,8 @@ const HistoryListScreen: React.FC = () => {
           <View style={styles.metricContent}>
             <Text style={styles.metricLabel}>{t('Stress level')}</Text>
             <View style={styles.metricValueContainer}>
-              <Text style={styles.metricValue}>{item.stressLevel || 2}</Text>
-              <Text style={styles.metricUnit}>{item.stressCategory || t('Moderate')}</Text>
+              <Text style={styles.metricValue}>{scanData.stressLevel || 0}</Text>
+              <Text style={styles.metricUnit}>{scanData.stressCategory || t('Normal')}</Text>
             </View>
           </View>
         </View>
@@ -157,15 +316,15 @@ const HistoryListScreen: React.FC = () => {
           <View style={styles.metricContent}>
             <Text style={styles.metricLabel}>{t('Heart Rate Variability')}</Text>
             <View style={styles.metricValueContainer}>
-              <Text style={styles.metricValue}>{item.heartRateVariability || 42}</Text>
-              <Text style={styles.metricUnit}>{item.hrvUnit || t('Milliseconds')}</Text>
+              <Text style={styles.metricValue}>{scanData.heartRateVariability || 0}</Text>
+              <Text style={styles.metricUnit}>{scanData.hrvUnit || t('Milliseconds')}</Text>
             </View>
           </View>
         </View>
       </View>
     </TouchableOpacity>
   );
-
+  }
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -184,7 +343,7 @@ const HistoryListScreen: React.FC = () => {
       <FlatList
         data={displayedItems}
         renderItem={renderHistoryItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(_, index) => index.toString()}
         refreshControl={
           <RefreshControl 
             refreshing={isLoading} 

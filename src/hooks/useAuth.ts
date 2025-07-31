@@ -2,6 +2,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootState } from '../redux/store';
 import { login as loginAction, logout as logoutAction, updateUser as updateUserAction, updateProfile as updateProfileAction, refreshToken as refreshTokenAction } from '../redux/slices/authSlice';
+import { clearHistory } from '../redux/slices/historySlice';
 import { saveAuthData, clearAuthData, STORAGE_KEYS } from '../utils/storage';
 import * as authApi from '../api/authApi';
 import { setupTokenRefreshTimer, clearTokenRefreshTimer } from '../api/axiosInstance';
@@ -202,6 +203,7 @@ export const useAuth = () => {
     
     // Clear from Redux store
     dispatch(logoutAction());
+    dispatch(clearHistory());
     
     // Clear from persistent storage
     await clearAuthData();

@@ -17,7 +17,8 @@ if (__DEV__) require('react-native-devsettings');
 // Ignore specific warnings
 LogBox.ignoreLogs([
   'Got a component with the name',
-  'i18next::pluralResolver'
+  'i18next::pluralResolver',
+  'Encountered two children with the same key'
 ]);
 
 const App: React.FC = () => {

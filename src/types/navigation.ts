@@ -37,12 +37,12 @@ export type ScanStackParamList = {
 
 export type HistoryStackParamList = {
   HistoryList: undefined;
-  HistoryCalendar: undefined;
+  HistoryCalendar: { initialDate?: string } | undefined;
   HistoryChart: undefined;
   ResultDetail: {
     scanResult: {
       id: string;
-      date: string;
+      createdAt: string;
       faceId: string;
       result: 'success' | 'failed';
       confidence: number;

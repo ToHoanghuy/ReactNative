@@ -65,7 +65,8 @@ export const clearAuthData = async () => {
       STORAGE_KEYS.REFRESH_TOKEN,
       STORAGE_KEYS.USER_INFO,
       STORAGE_KEYS.USER_PROFILE,
-      STORAGE_KEYS.TOKEN_EXPIRY
+      STORAGE_KEYS.TOKEN_EXPIRY,
+      STORAGE_KEYS.HISTORY_DATA // Also clear history data on logout
     ]);
     return true;
   } catch (error) {

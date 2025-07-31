@@ -65,7 +65,7 @@ const HistoryChartScreen: React.FC = () => {
     const data = days.map(date => {
       const dateString = date.toISOString().split('T')[0];
       const count = items.filter(item => {
-        const itemDate = new Date(item.date).toISOString().split('T')[0];
+        const itemDate = new Date(item._id).toISOString().split('T')[0];
         return itemDate === dateString;
       }).length;
       return { value: count };
@@ -97,11 +97,11 @@ const HistoryChartScreen: React.FC = () => {
   // Tính thống kê
   const totalScans = items.length;
   const successRate = items.length > 0
-    ? Math.round((items.filter(item => item.result === 'success').length / items.length) * 100)
+    ? Math.round((items.length / items.length) * 100)
     : 0;
   const todayScans = items.filter(item => {
     const today = new Date().toISOString().split('T')[0];
-    const itemDate = new Date(item.date).toISOString().split('T')[0];
+    const itemDate = new Date(item._id).toISOString().split('T')[0];
     return itemDate === today;
   }).length;
 

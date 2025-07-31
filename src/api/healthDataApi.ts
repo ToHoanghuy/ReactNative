@@ -161,3 +161,66 @@ export const updateHealthData = async (healthData: HealthData): Promise<HealthDa
     }
   }
 };
+
+/**
+ * Get health data for a date range (by month or year)
+ * @param type The type of range ('month' or 'year')
+ * @param data The date string (format: 'MM/YYYY' for month, 'YYYY' for year)
+ * @returns Response with success status, message and health data array
+ */
+export const getHealthDataByRange = async (type: 'month' | 'year', data: string): Promise<HealthDataResponse> => {
+  try {
+    console.log(`Fetching health data for ${type}:`, data);
+    
+    const response = await axios.post('/api/v1/health-data/get-health-data-by-range', { 
+      type,
+      data
+    });
+    
+    // Format the response
+    let formattedResponse: HealthDataResponse;
+    
+    if (response.data) {
+      if (response.data.success !== undefined) {
+        // API already has success field
+        formattedResponse = response.data;
+      } else {
+        // Need to create success field based on message or status
+        formattedResponse = {
+          success: true,
+          message: response.data.message || `Health data for ${type} retrieved successfully`,
+          data: response.data.data || response.data
+        };
+      }
+    } else {
+      formattedResponse = {
+        success: false,
+        message: 'Invalid response format from server'
+      };
+    }
+    
+    console.log('Health data by range response:', formattedResponse);
+    return formattedResponse;
+    
+  } catch (error: any) {
+    console.error('Get Health Data By Range API error:', error);
+    
+    if (error.response) {
+      return {
+        success: false,
+        message: error.response.data?.message || 'Failed to retrieve health data',
+        data: error.response.data
+      };
+    } else if (error.request) {
+      return {
+        success: false,
+        message: 'No response from server. Check your internet connection.'
+      };
+    } else {
+      return {
+        success: false,
+        message: error.message || 'An unknown error occurred'
+      };
+    }
+  }
+};
